@@ -28,6 +28,11 @@ class Character:
 
 
     #Carga los frames de una animación
+    #folder: carpeta donde se encuentran los frames
+    #prefix: prefijo del nombre de los frames o nombre de animación
+    #count: cantidad de frames
+    #extension: extension de los frames
+    @staticmethod
     def _load_frames(folder, prefix, count, extension="png"):
         frames = []
         folder = os.path.join(con.ASSETS_PATH, folder)
