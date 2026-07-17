@@ -1,8 +1,8 @@
 WIDTH = 1280
 HEIGHT = 720
 ASSETS_PATH = "Assets/"
-MUSIC_PATH = "Music/"
-SFX_PATH = "SFX/"
+MUSIC_PATH = "Media/Music/"
+SFX_PATH = "Media/SFX/"
 CLOCK_FPS = 60
 SPEED = 5
 GRAVITY = 0.5
