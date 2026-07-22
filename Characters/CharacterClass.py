@@ -10,6 +10,8 @@ class Character:
         self.width = width
         self.height = height
         self.speed = con.SPEED
+        self.hitbox = pygame.Rect(self.x, self.y, self.width, self.height)
+        self.show_hitbox = con.SHOW_HITBOX
 
     #Mueve el personaje
     def move(self, direction):
@@ -21,10 +23,14 @@ class Character:
             self.y -= self.speed
         elif direction == "down":
             self.y += self.speed
+        self.hitbox.x = self.x
+        self.hitbox.y = self.y
     
     #Dibuja el personaje en la pantalla
     def draw(self, screen, frame):
         screen.blit(frame, (self.x, self.y))
+        if self.show_hitbox:
+            pygame.draw.rect(screen, (255, 0, 0), self.hitbox, 2)
 
 
     #Carga los frames de una animación

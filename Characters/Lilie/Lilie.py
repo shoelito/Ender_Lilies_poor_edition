@@ -78,12 +78,19 @@ class Lilie(Character):
             self.y = con.HEIGHT - 50
             self.vel_y = 0
 
+        self.hitbox.x = self.x
+        self.hitbox.y = self.y
+
     def draw(self, screen):
         frame, is_flip = Character._get_scaled_frame(self)
         screen.blit(frame, (self.x, self.y))
+        if self.show_hitbox:
+            pygame.draw.rect(screen, (0, 255, 0), self.hitbox, 2)
+        
+    def groundCollision(self):
+        pass
 
     def move(self, actions):
-        print(actions)
         if "left" in actions:
             self.moving["left"] = True
         else:
