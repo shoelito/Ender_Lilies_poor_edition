@@ -22,13 +22,17 @@ outputs = []
 while running:
     dt = clock.tick(con.CLOCK_FPS)
 
-    for event in pygame.event.get():
-        #print()
-        outputs = movements.handle_inputs(event, outputs)
+    
+    outputs = movements.handle_inputs(outputs)
+    #print(outputs)
 
     for output in outputs:
         if output == "quit":
             running = False
+    
+    lilie.move(outputs)
+    lilie.update(dt)
+    
 
     screen.fill((0, 0, 0))
     lilie.draw(screen)

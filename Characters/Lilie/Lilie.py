@@ -81,3 +81,18 @@ class Lilie(Character):
     def draw(self, screen):
         frame, is_flip = Character._get_scaled_frame(self)
         screen.blit(frame, (self.x, self.y))
+
+    def move(self, actions):
+        print(actions)
+        if "left" in actions:
+            self.moving["left"] = True
+        else:
+            self.moving["left"] = False
+        if "right" in actions:
+            self.moving["right"] = True
+        else:
+            self.moving["right"] = False
+        if "select" in actions:
+            self.moving["jump"] = True
+        else:
+            self.moving["jump"] = False
