@@ -24,7 +24,7 @@ while running:
 
     
     outputs = movements.handle_inputs(outputs)
-    print(outputs)
+    #print(outputs)
 
     if "pause" in outputs and not is_pressed:
         is_pressed = True
@@ -43,9 +43,11 @@ while running:
     else:
         #Menu logic
         pass
-    
 
     screen.fill((0, 20, 0))
+    # Dibujar suelo (gris oscuro)
+    pygame.draw.rect(screen, (50, 50, 50), (0, con.HEIGHT - 50, con.WIDTH, 50))
+    
     lilie.draw(screen)
     pygame.display.update()
 

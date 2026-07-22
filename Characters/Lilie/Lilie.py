@@ -22,6 +22,8 @@ class Lilie(Character):
         self.gravity = con.GRAVITY
         self.vel_y = 0
         self.jumpLimit = 2
+        self.is_jump_pressed = False
+        self.is_jumping = False
 
         self.moving = {"left": False, "right": False, "jump": False, "dashLeft": False, "dashRight": False , "dash": False}
         self.speed = con.SPEED
@@ -43,21 +45,27 @@ class Lilie(Character):
         if self.moving["left"] and not self.moving["dash"]:
             self.x -= self.speed
             self.facing_right = False
+
         if self.moving["right"] and not self.moving["dash"]:
             self.x += self.speed
             self.facing_right = True
+
+        if self.is_jumping:
+            self.moving["jump"] = True
         if self.moving["jump"]:
             if self.jumpLimit > 0:
                 self.vel_y = -self.speed
                 self.y += self.vel_y
                 if self.frame_index == (len(self.animations["jump"]) // 2) - 1:
-                    self.moving["jump"] = False
-                    self.y += self.vel_y
                     self.jumpLimit -= 1
+                    self.moving["jump"] = False
+                    self.is_jumping = False
+                    self.y += self.vel_y
+                    
             else:
                 #debe de tocar suelo para refrescar los try de saltos
                 self.moving["jump"] = False
-                self.jumpLimit = 2
+                self.is_jumping = False
 
         if self.moving["dash"]:
             if self.facing_right:
@@ -74,9 +82,10 @@ class Lilie(Character):
         self.vel_y += self.gravity
         self.y += self.vel_y
 
-        if self.y >= con.HEIGHT - 50:
-            self.y = con.HEIGHT - 50
+        if self.y + self.height >= con.HEIGHT - 50:
+            self.y = con.HEIGHT - 50 - self.height
             self.vel_y = 0
+            self.jumpLimit = 2
 
         self.hitbox.x = self.x
         self.hitbox.y = self.y
@@ -91,6 +100,7 @@ class Lilie(Character):
         pass
 
     def move(self, actions):
+        print(f"Jump pressed: {self.is_jump_pressed} | Limit: {self.jumpLimit} | Moving: {self.moving['jump']}")
         if "left" in actions:
             self.moving["left"] = True
         else:
@@ -100,6 +110,8 @@ class Lilie(Character):
         else:
             self.moving["right"] = False
         if "select" in actions:
-            self.moving["jump"] = True
+            if not self.is_jump_pressed:
+                self.is_jump_pressed = True
+                self.is_jumping = True
         else:
-            self.moving["jump"] = False
+            self.is_jump_pressed = False
