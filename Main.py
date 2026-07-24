@@ -17,20 +17,20 @@ outputs = []
 
 #Menu flag
 in_pause_menu = False
+in_dashboard_menu = False
 is_pressed = False
 
 while running:
     dt = clock.tick(con.CLOCK_FPS)
-
     
-    outputs = movements.handle_inputs(outputs)
+    outputs = movements.handle_inputs(outputs, in_pause_menu or in_dashboard_menu)
     #print(outputs)
 
-    if "pause" in outputs and not is_pressed:
+    if "pause" in outputs and not is_pressed and not in_dashboard_menu:
         is_pressed = True
         in_pause_menu = not in_pause_menu
 
-    if "pause" not in outputs:
+    if "pause" not in outputs and not in_dashboard_menu:
         is_pressed = False
 
     for output in outputs:
@@ -41,7 +41,7 @@ while running:
         lilie.move(outputs)
         lilie.update(dt)
     else:
-        #Menu logic
+        #La logica de menu en una clase separada
         pass
 
     screen.fill((0, 20, 0))

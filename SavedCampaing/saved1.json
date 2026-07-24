@@ -1,0 +1,53 @@
+{
+    "level": 1,
+    "player": {
+        "x": 100,
+        "y": 100,
+        "pv": 100,
+        "impurity": 0,
+        "next_impurity_from_level": 140,
+        "attack": 50,
+        "location": "starting_room",
+        "abilities_selected": [
+            [
+                "black_knight"
+            ],
+            [
+                "black_knight"
+            ]
+        ],
+        "reliquies_equipped": []
+    },
+    "double_jump": false,
+    "chapter": 1,
+    "game_time": 0,
+    "healing_prayers": 3,
+    "remains": [
+        {
+            "item": "impure sediments",
+            "count": 0
+        },
+        {
+            "item": "impure rages",
+            "count": 0
+        },
+        {
+            "item": "old souls",
+            "count": 0
+        }
+    ],
+    "reliquies": [],
+    "abilities": [
+        {
+            "name": "black_knight",
+            "level": 1
+        }
+    ],
+    "actions": [
+        "pray",
+        "jump",
+        "dash",
+        "swim",
+        "invoke_souls"
+    ]
+}

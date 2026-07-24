@@ -1,7 +1,11 @@
 import pygame
 import os
+import json
 import Constantes as con
 from Characters.CharacterClass import Character
+
+with open("SavedCampaing/saved1.json", "r") as f:
+    saved = json.load(f)
 
 class Lilie(Character):
     def __init__(self, x, y, width, height):
@@ -21,8 +25,9 @@ class Lilie(Character):
         self.anim_speed = 120
         self.gravity = con.GRAVITY
         self.vel_y = 0
-        self.jumpLimit = 2
+        self.jumpLimit = 2 if saved["double_jump"] else 1
         self.is_jump_pressed = False
+        self.is_dash_pressed = False
         self.is_jumping = False
 
         self.moving = {"left": False, "right": False, "jump": False, "dashLeft": False, "dashRight": False , "dash": False}
@@ -85,7 +90,7 @@ class Lilie(Character):
         if self.y + self.height >= con.HEIGHT - 50:
             self.y = con.HEIGHT - 50 - self.height
             self.vel_y = 0
-            self.jumpLimit = 2
+            self.jumpLimit = 2 if saved["double_jump"] else 1
 
         self.hitbox.x = self.x
         self.hitbox.y = self.y
@@ -100,7 +105,7 @@ class Lilie(Character):
         pass
 
     def move(self, actions):
-        print(f"Jump pressed: {self.is_jump_pressed} | Limit: {self.jumpLimit} | Moving: {self.moving['jump']}")
+        print(self.jumpLimit)
         if "left" in actions:
             self.moving["left"] = True
         else:
@@ -109,9 +114,15 @@ class Lilie(Character):
             self.moving["right"] = True
         else:
             self.moving["right"] = False
-        if "select" in actions:
+        if "jump" in actions:
             if not self.is_jump_pressed:
                 self.is_jump_pressed = True
                 self.is_jumping = True
         else:
             self.is_jump_pressed = False
+        if "dash" in actions:
+            if not self.is_dash_pressed:
+                self.is_dash_pressed = True
+                self.moving["dash"] = True
+        else:
+            self.is_dash_pressed = False

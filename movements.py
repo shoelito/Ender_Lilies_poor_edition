@@ -1,7 +1,10 @@
 import pygame
 import Constantes as con
 
-def handle_inputs(output=None):
+def handle_inputs(output=None, in_pause = False):
+    if in_pause:
+        pauseOutputs = ["select", "back"]
+        
     for event in pygame.event.get():
         if output is None:
             output = []
@@ -25,11 +28,15 @@ def handle_inputs(output=None):
             elif event.key == pygame.K_s:
                 action = "down"
             elif event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
-                action = "select"
+                action = "jump" if not in_pause else "select"
             elif event.key == pygame.K_BACKSPACE:
                 action = "back"
             elif event.key == pygame.K_ESCAPE:
-                action = "pause"
+                action = "pause" if not in_pause else "back"
+            elif event.key == pygame.K_TAB:
+                action = "dashboard"
+            elif event.key == pygame.K_LSHIFT:
+                action = "dash"
 
         # BOTONES DEL MANDO 
         elif event.type in (pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP):
@@ -42,13 +49,15 @@ def handle_inputs(output=None):
             elif event.button == 12:
                 action = "down"
             elif event.button == 0:
-                action = "select"
+                action = "jump" if not in_pause else "select"
             elif event.button == 1:
                 action = "back"
+            elif event.button == 4:
+                action = "pause" if not in_pause else "back"
             elif event.button == 6:
-                action = "pause"
-            
-            
+                action = "dashboard"
+            elif event.button == 9:
+                action = "dash"
 
         # JOYSTICK
         elif event.type == pygame.JOYAXISMOTION:
