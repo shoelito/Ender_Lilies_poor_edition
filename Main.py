@@ -11,7 +11,7 @@ screen = pygame.display.set_mode((con.WIDTH, con.HEIGHT))
 pygame.display.set_caption("Ender Lilies: Quietus of the Knights - Poor Edition")
 clock = pygame.time.Clock()
 
-lilie = Lilie(con.WIDTH // 3, con.HEIGHT // 3 + 50, 60, 110)
+lilie = Lilie(con.WIDTH // 3, con.HEIGHT // 3 + 50, 45, 95)
 running = True
 outputs = []
 
@@ -37,14 +37,15 @@ while running:
         if output == "quit":
             running = False
             
-    if not in_pause_menu:
-        lilie.move(outputs)
+    if not in_pause_menu or not in_dashboard_menu:
+        lilie.movements(outputs)
         lilie.update(dt)
     else:
         #La logica de menu en una clase separada
         pass
 
     screen.fill((0, 20, 0))
+    
     # Dibujar suelo (gris oscuro)
     pygame.draw.rect(screen, (50, 50, 50), (0, con.HEIGHT - 50, con.WIDTH, 50))
     
