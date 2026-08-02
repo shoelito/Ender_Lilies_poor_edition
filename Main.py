@@ -1,54 +1,59 @@
-import movements
 import pygame
+import sys
 import Constantes as con
-from Characters.Lilie import Lilie
+from Menu import Menu
+from Characters.Lilie.Lilie import Lilie
+from movements import handle_inputs  # Asegúrate de que este sea el nombre exacto del archivo de inputs de tu compañero
 
-pygame.init()
-pygame.joystick.init()
-joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+def main():
+    # Inicialización del motor y canales de audio
+    pygame.init()
+    pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+    pygame.mixer.set_num_channels(32)
 
-screen = pygame.display.set_mode((con.WIDTH, con.HEIGHT))
-pygame.display.set_caption("Ender Lilies: Quietus of the Knights - Poor Edition")
-clock = pygame.time.Clock()
+    screen = pygame.display.set_mode((con.WIDTH, con.HEIGHT))
+    pygame.display.set_caption("Ender Lilies: Quietus of the Knights - Poor Edition")
+    reloj = pygame.time.Clock()
 
-lilie = Lilie(con.WIDTH // 3, con.HEIGHT // 3 + 50, 60, 110)
-running = True
-outputs = []
+    # 1. Ejecutamos el Menú Principal
+    menu_principal = Menu(screen)
+    menu_principal.ejecutar()  # Pausa aquí hasta que elijas "Empezar"
 
-#Menu flag
-in_pause_menu = False
-in_dashboard_menu = False
-is_pressed = False
+    #  INSTANCIAMOS A LILI AL SALIR DEL MENÚ
+    # Ajusta los parámetros x, y, width y height según lo que requiera tu clase Lilie
+    lili = Lilie(100, 400, 50, 80)
 
-while running:
-    dt = clock.tick(con.CLOCK_FPS)
-    
-    outputs = movements.handle_inputs(outputs, in_pause_menu or in_dashboard_menu)
-    #print(outputs)
+    # 3. BUCLE PRINCIPAL DEL JUEGO
+    acciones_activas = []
 
-    if "pause" in outputs and not is_pressed and not in_dashboard_menu:
-        is_pressed = True
-        in_pause_menu = not in_pause_menu
+    while True:
+        dt = reloj.tick(con.CLOCK_FPS)
 
-    if "pause" not in outputs and not in_dashboard_menu:
-        is_pressed = False
+        # Procesamos los eventos y obtenemos la lista de acciones mediante la función de inputs
+        acciones_activas = handle_inputs(acciones_activas)
 
-    for output in outputs:
-        if output == "quit":
-            running = False
-            
-    if not in_pause_menu:
-        lilie.move(outputs)
-        lilie.update(dt)
-    else:
-        #La logica de menu en una clase separada
-        pass
+        # Si el usuario cerró la ventana
+        if "quit" in acciones_activas:
+            pygame.quit()
+            sys.exit()
 
-    screen.fill((0, 20, 0))
-    # Dibujar suelo (gris oscuro)
-    pygame.draw.rect(screen, (50, 50, 50), (0, con.HEIGHT - 50, con.WIDTH, 50))
-    
-    lilie.draw(screen)
-    pygame.display.update()
+        # Sincronizamos todas las acciones (movimiento, salto y dash) con el diccionario interno de Lili
+        lili.moving["left"] = "left" in acciones_activas
+        lili.moving["right"] = "right" in acciones_activas
+        lili.moving["jump"] = "jump" in acciones_activas  # Control del salto
+        lili.moving["dash"] = "dash" in acciones_activas  # Control del dash
 
-pygame.quit()
+        
+        lili.update(dt)
+
+        # Renderizado / Dibujo en pantalla
+        screen.fill((20, 20, 30))  # Fondo del nivel
+        
+        # Dibujamos a Lili en pantalla
+        if hasattr(lili, 'draw'):
+            lili.draw(screen)
+
+        pygame.display.flip()
+
+if __name__ == "__main__":
+    main()
