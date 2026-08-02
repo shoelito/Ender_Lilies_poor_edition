@@ -37,6 +37,8 @@ def handle_inputs(output=None, in_pause = False):
                 action = "dashboard"
             elif event.key == pygame.K_LSHIFT:
                 action = "dash"
+            elif event.key == pygame.K_e:
+                action = "pray"
 
         # BOTONES DEL MANDO 
         elif event.type in (pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP):
@@ -58,6 +60,8 @@ def handle_inputs(output=None, in_pause = False):
                 action = "dashboard"
             elif event.button == 9:
                 action = "dash"
+            elif event.button == 10:
+                action = "pray"
 
         # JOYSTICK
         elif event.type == pygame.JOYAXISMOTION:
