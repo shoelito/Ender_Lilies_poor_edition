@@ -122,5 +122,5 @@ def handle_inputs(output=None, in_pause = False):
         if event.type == pygame.JOYAXISMOTION and event.axis == 0:
             if abs(event.value) > con.AXIS_DEADZONE:
                 print(f"Joystick Axis {event.axis} : {event.value:6.3f}")'''
-        
+    
     return output

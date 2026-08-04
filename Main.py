@@ -18,9 +18,7 @@ def main():
     # 1. Ejecutamos el Menú Principal
     menu_principal = Menu(screen)
     menu_principal.ejecutar()  # Pausa aquí hasta que elijas "Empezar"
-
-    #  INSTANCIAMOS A LILI AL SALIR DEL MENÚ
-    # Ajusta los parámetros x, y, width y height según lo que requiera tu clase Lilie
+    
     lili = Lilie(100, 400, 50, 80)
 
     # 3. BUCLE PRINCIPAL DEL JUEGO
@@ -38,12 +36,7 @@ def main():
             sys.exit()
 
         # Sincronizamos todas las acciones (movimiento, salto y dash) con el diccionario interno de Lili
-        lili.moving["left"] = "left" in acciones_activas
-        lili.moving["right"] = "right" in acciones_activas
-        lili.moving["jump"] = "jump" in acciones_activas  # Control del salto
-        lili.moving["dash"] = "dash" in acciones_activas  # Control del dash
-
-        
+        lili.movements(acciones_activas)
         lili.update(dt)
 
         # Renderizado / Dibujo en pantalla

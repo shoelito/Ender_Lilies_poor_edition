@@ -13,4 +13,5 @@ class Ability(ABC):
         self.frames = frames
         self.spawn = spawn
 
+
     
