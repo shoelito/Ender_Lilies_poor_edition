@@ -39,7 +39,27 @@
     "reliquies": [],
     "abilities": [
         {
-            "name": "black_knight",
+            "name": "umbral_knight",
+            "level": 1
+        },
+        {
+            "name": "guardian_siegrid",
+            "level": 1
+        },
+        {
+            "name": "cliffside_hamlet_youth",
+            "level": 1
+        },
+        {
+            "name": "fungal_sorcerer",
+            "level": 1
+        },
+        {
+            "name": "floral_sorcerer",
+            "level": 1
+        },
+        {
+            "name": "dark_witch_eleine",
             "level": 1
         }
     ],
