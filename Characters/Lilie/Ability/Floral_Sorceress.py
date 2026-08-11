@@ -1,4 +1,4 @@
-from ..Ability import Ability
+from Characters.Ability.Ability import Ability
 import json
 
 with open("SavedCampaing/saved1.json", "r") as f:
@@ -24,3 +24,6 @@ class Floral_Sorceress(Ability):
 
     def ResetUses(self):
         pass
+    
+    def name(self):
+        return self.name

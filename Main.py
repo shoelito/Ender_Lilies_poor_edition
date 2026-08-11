@@ -25,7 +25,7 @@ def main():
     with open(f"SavedCampaing/PreSaved{NumeroDePartida}.json", "r") as f:
         data = json.load(f)
     
-    lili = Lilie(data["player"]["x"], data["player"]["y"], 50, 80)
+    lili = Lilie(data["player"]["x"], data["player"]["y"], 120, 120)
 
     # 3. BUCLE PRINCIPAL DEL JUEGO
     acciones_activas = []

@@ -44,8 +44,10 @@ def handle_inputs(output=None, in_pause = False):
             elif event.key == pygame.K_o:
                 action = "attack2"
             elif event.key == pygame.K_p:
-                
                 action = "attack3"
+            elif event.key == pygame.K_q:
+                action = "changeSlot"
+                
         # BOTONES DEL MANDO 
         elif event.type in (pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP):
             if event.button == 13:
@@ -74,6 +76,8 @@ def handle_inputs(output=None, in_pause = False):
                 action = "attack2"
             elif event.button == 1:
                 action = "attack3"
+            elif event.button == 8:
+                action = "changeSlot"
                 
         # JOYSTICK
         elif event.type == pygame.JOYAXISMOTION:

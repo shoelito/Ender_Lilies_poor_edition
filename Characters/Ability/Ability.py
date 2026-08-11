@@ -22,3 +22,7 @@ class Ability(ABC):
     @abstractmethod
     def ResetUses(self):
         pass
+    
+    @abstractmethod
+    def name(self):
+        pass
