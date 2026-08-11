@@ -1,15 +1,14 @@
 import pygame
-import os
+import re
 import json
 import Constantes as con
 from Characters.CharacterClass import Character
 
-with open("SavedCampaing/saved1.json", "r") as f:
-    saved = json.load(f)
-
 class Lilie(Character):
     def __init__(self, x, y, width, height):
         super().__init__(x, y, width, height)
+        with open("SavedCampaing/PreSaved1.json", "r") as f:
+            self.saved = json.load(f)
         self.facing_right = True
 
         self.animations = {
@@ -19,14 +18,25 @@ class Lilie(Character):
             "dash": Character._load_frames("Lilie/Dash", "dash", 8),
             "pray": Character._load_frames("Lilie/Pray", "pray", 10)
         }
+        
+        self.pv = self.saved["player"]["pv"]
+        self.attacks = self.saved["player"]["abilities_selected"]
+        
+        self.attacksSlot1 = self.attacks[0] 
+        self.attacksSlot2 = self.attacks[1]
+        self.attackSlotSelected = 1
+        
 
         self.state = "idle"
         self.frame_index = 0
+        
+        
         self.anim_timer = 0
         self.anim_speed = 120
         self.gravity = con.GRAVITY
         self.vel_y = 0
-        self.jumpLimit = 2 if saved["double_jump"] else 1
+        self.jumpLimit = 2 if self.saved["double_jump"] else 1
+        
         self.is_jump_pressed = False
         self.is_dash_pressed = False
         self.is_jumping = False
@@ -113,7 +123,7 @@ class Lilie(Character):
         if self.y + self.height >= con.HEIGHT - 50:
             self.y = con.HEIGHT - 50 - self.height
             self.vel_y = 0
-            self.jumpLimit = 2 if saved["double_jump"] else 1
+            self.jumpLimit = 2 if self.saved["double_jump"] else 1
 
         self.hitbox.x = self.x
         self.hitbox.y = self.y
@@ -123,6 +133,13 @@ class Lilie(Character):
         screen.blit(frame, (self.x, self.y))
         if self.show_hitbox:
             pygame.draw.rect(screen, (0, 255, 0), self.hitbox, 2)
+    
+    def attack(self, attack):
+        match = re.search(r'\d+', str(attack))
+        if match:
+            if self.attackSlotSelected == 1:
+                attackSelected = int(match.group()) -1
+                print(f"{attack}: {attackSelected}")
 
     def movements(self, actions: tuple = (None)):
         
@@ -153,3 +170,8 @@ class Lilie(Character):
                     self.moving["pray"] = True
         else:
             self.is_pray_pressed = False
+        if any("attack" in a for a in actions):
+            self.attack(actions)
+            
+            
+            
