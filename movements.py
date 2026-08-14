@@ -39,7 +39,15 @@ def handle_inputs(output=None, in_pause = False):
                 action = "dash"
             elif event.key == pygame.K_e:
                 action = "pray"
-
+            elif event.key == pygame.K_i:
+                action = "attack1"
+            elif event.key == pygame.K_o:
+                action = "attack2"
+            elif event.key == pygame.K_p:
+                action = "attack3"
+            elif event.key == pygame.K_q:
+                action = "changeSlot"
+                
         # BOTONES DEL MANDO 
         elif event.type in (pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP):
             if event.button == 13:
@@ -62,7 +70,15 @@ def handle_inputs(output=None, in_pause = False):
                 action = "dash"
             elif event.button == 10:
                 action = "pray"
-
+            elif event.button == 2:
+                action = "attack1"
+            elif event.button == 3:
+                action = "attack2"
+            elif event.button == 1:
+                action = "attack3"
+            elif event.button == 8:
+                action = "changeSlot"
+                
         # JOYSTICK
         elif event.type == pygame.JOYAXISMOTION:
             if event.axis == 0:

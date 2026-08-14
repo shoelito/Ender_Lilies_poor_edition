@@ -3,6 +3,7 @@ import sys
 import Constantes as con
 from Menu import Menu
 from Characters.Lilie.Lilie import Lilie
+import json
 from movements import handle_inputs  # Asegúrate de que este sea el nombre exacto del archivo de inputs de tu compañero
 
 def main():
@@ -19,7 +20,12 @@ def main():
     menu_principal = Menu(screen)
     menu_principal.ejecutar()  # Pausa aquí hasta que elijas "Empezar"
     
-    lili = Lilie(100, 400, 50, 80)
+    NumeroDePartida = 1 #DEFINIR CUAL PARTIDA SE CARGA SEGUN SELECCIONE EL USUARIO
+    
+    with open(f"SavedCampaing/PreSaved{NumeroDePartida}.json", "r") as f:
+        data = json.load(f)
+    
+    lili = Lilie(data["player"]["x"], data["player"]["y"], 120, 120)
 
     # 3. BUCLE PRINCIPAL DEL JUEGO
     acciones_activas = []
