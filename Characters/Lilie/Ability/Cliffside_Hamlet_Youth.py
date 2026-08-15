@@ -13,16 +13,15 @@ class Cliffside_Hamlet_Youth(Ability):
             uses=18,
             baseDamage=50,
             level=saved["abilities"][2]["level"],
-            frames=[])
+            frames=[],
+            animation_speed=4,
+            scale=0.35,
+            offset_x=30, # Si es positivo, aparece más adelante
+            offset_y=-40) # Si es negativo, aparece más arriba
+        self._load_frames()
 
-    def Attack(self, screen):
-        pass
-
-    def Update(self):
-        pass
-
-    def ResetUses(self):
-        pass
-    
     def name(self):
         return self.name
+
+    def _load_frames(self):
+        super()._load_frames("Assets/Lilie/Ability/Cliffside_Hamlet_Youth", "lanzamiento", 8)

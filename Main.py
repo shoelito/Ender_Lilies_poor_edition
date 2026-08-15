@@ -18,9 +18,9 @@ def main():
 
     # 1. Ejecutamos el Menú Principal
     menu_principal = Menu(screen)
-    menu_principal.ejecutar()  # Pausa aquí hasta que elijas "Empezar"
-    
-    NumeroDePartida = 1 #DEFINIR CUAL PARTIDA SE CARGA SEGUN SELECCIONE EL USUARIO
+    slot_seleccionado = menu_principal.ejecutar()  # Pausa aquí hasta que elijas "Empezar"; devuelve el slot (0-based)
+
+    NumeroDePartida = slot_seleccionado + 1
     
     with open(f"SavedCampaing/PreSaved{NumeroDePartida}.json", "r") as f:
         data = json.load(f)
@@ -42,7 +42,7 @@ def main():
             sys.exit()
 
         # Sincronizamos todas las acciones (movimiento, salto y dash) con el diccionario interno de Lili
-        lili.movements(acciones_activas)
+        lili.movements(acciones_activas, screen)
         lili.update(dt)
 
         # Renderizado / Dibujo en pantalla

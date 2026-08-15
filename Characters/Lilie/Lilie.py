@@ -24,7 +24,15 @@ class Lilie(Character):
             "dash": Character._load_frames("Lilie/Dash", "dash", 8),
             "pray": Character._load_frames("Lilie/Pray", "rezar", 10)
         }
-        
+
+        # Bounding box (en coordenadas del frame sin escalar) de los píxeles
+        # no transparentes de cada frame, para que el hitbox siga el dibujo
+        # real de Lilie en vez de todo el lienzo width x height.
+        self.animation_bounds = {
+            state: [Character._alpha_bounds(frame) for frame in frames]
+            for state, frames in self.animations.items()
+        }
+
         self.pv = self.saved["player"]["pv"]
         
         ability_map = {
@@ -61,6 +69,9 @@ class Lilie(Character):
         self.is_dash_pressed = False
         self.is_jumping = False
         self.is_praying = False
+        self.is_pray_pressed = False
+        self.is_slot_pressed = False
+        self.is_attack_pressed = False
 
         self.moving = {"left": False, "right": False, "jump": False, "dashLeft": False, "dashRight": False , "dash": False, "pray": False}
         self.speed = con.SPEED
@@ -146,25 +157,29 @@ class Lilie(Character):
             self.vel_y = 0
             self.jumpLimit = 2 if self.saved["double_jump"] else 1
 
-        self.hitbox.x = self.x
-        self.hitbox.y = self.y
+        self._sync_hitbox()
 
     def draw(self, screen):
         frame, is_flip = Character._get_scaled_frame(self)
         screen.blit(frame, (self.x, self.y))
         if self.show_hitbox:
             pygame.draw.rect(screen, (0, 255, 0), self.hitbox, 2)
+            
+        for attack in self.attacks[self.slotSelected]:
+            attack.Update(screen, self.x, self.y, self.facing_right, self.width)
     
-    def attack(self, attack):
+    def attack(self, attack, screen):
         match = re.search(r'\d+', str(attack))
         if match:
-                attackSelected = int(match.group()) -1
-                try:
-                    print(self.attacks[self.slotSelected][attackSelected].name)
-                except IndexError:
-                    print("No hay ataque seleccionado")
+            attackSelected = int(match.group()) -1
+            try:
+                ability = self.attacks[self.slotSelected][attackSelected]
+                if not ability.trigger_attack():
+                    print(f"{ability.name}: sin usos o en cooldown ({ability.remaining_uses}/{ability.uses} usos)")
+            except IndexError:
+                print("No hay ataque seleccionado")
 
-    def movements(self, actions: tuple = (None)):
+    def movements(self, actions: tuple = (None), screen = None ):
         
         if "left" in actions:
             self.moving["left"] = True
@@ -193,8 +208,13 @@ class Lilie(Character):
                     self.moving["pray"] = True
         else:
             self.is_pray_pressed = False
-        if any("attack" in a for a in actions):
-            self.attack(actions)
+        attack_action = next((a for a in actions if "attack" in a), None)
+        if attack_action:
+            if not self.is_attack_pressed:
+                self.is_attack_pressed = True
+                self.attack(attack_action, screen)
+        else:
+            self.is_attack_pressed = False
             
         if "changeSlot" in actions:
             if not self.is_slot_pressed:
