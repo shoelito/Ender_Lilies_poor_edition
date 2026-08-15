@@ -1,5 +1,6 @@
 import pygame
 import os
+import re
 import Constantes as con
 
 class Character:
@@ -43,7 +44,14 @@ class Character:
         frames = []
         folder = os.path.join(con.ASSETS_PATH, folder)
         path = os.path.join(folder)
-        for f in sorted(os.listdir(path)):
+
+        # Ordena por el número en el nombre del archivo (jump10 va después de
+        # jump9, no antes de jump2 como pasaría con un sort alfabético normal)
+        def frame_sort_key(filename):
+            match = re.search(r"(\d+)", filename)
+            return (int(match.group(1)) if match else float("inf"), filename)
+
+        for f in sorted(os.listdir(path), key=frame_sort_key):
             if f.lower().endswith(f".{extension}"):
                 img = pygame.image.load(os.path.join(path, f)).convert_alpha()
                 frames.append(img)
@@ -58,3 +66,42 @@ class Character:
         if is_flip:
             scaled = pygame.transform.flip(scaled, True, False)
         return (scaled, is_flip)
+
+    #Rect (en coordenadas del frame sin escalar) que encierra los píxeles
+    #no transparentes de un sprite, para armar hitboxes ajustadas al dibujo
+    #real en vez de a todo el lienzo width x height.
+    @staticmethod
+    def _alpha_bounds(surface):
+        rects = pygame.mask.from_surface(surface).get_bounding_rects()
+        if not rects:
+            return pygame.Rect(0, 0, 0, 0)
+        bounds = rects[0].copy()
+        for r in rects[1:]:
+            bounds.union_ip(r)
+        return bounds
+
+    #Ajusta self.hitbox a los píxeles visibles del frame actual (según
+    #self.state/self.frame_index) en vez de al rectángulo width x height
+    #completo. Requiere que la subclase haya armado self.animation_bounds
+    #con Character._alpha_bounds() para cada frame de self.animations.
+    def _sync_hitbox(self):
+        frames = self.animations[self.state]
+        index = self.frame_index % len(frames)
+        raw = frames[index]
+        bounds = self.animation_bounds[self.state][index]
+
+        scale_x = self.width / raw.get_width()
+        scale_y = self.height / raw.get_height()
+
+        scaled_w = max(1, round(bounds.width * scale_x))
+        scaled_h = max(1, round(bounds.height * scale_y))
+        scaled_x = round(bounds.x * scale_x)
+        scaled_y = round(bounds.y * scale_y)
+
+        if not self.facing_right:
+            scaled_x = self.width - scaled_x - scaled_w
+
+        self.hitbox.width = scaled_w
+        self.hitbox.height = scaled_h
+        self.hitbox.x = self.x + scaled_x
+        self.hitbox.y = self.y + scaled_y

@@ -13,16 +13,15 @@ class Guardian_Siegrid(Ability):
             uses=13,
             baseDamage=50,
             level=saved["abilities"][1]["level"],
-            frames=[])
-
-    def Attack(self, screen):
-        pass
-
-    def Update(self):
-        pass
-
-    def ResetUses(self):
-        pass
+            frames=[],
+            animation_speed=5,
+            scale=0.35,
+            offset_x=30, # Si es positivo, aparece más adelante
+            offset_y=-55) # Si es negativo, aparece más arriba
+        self._load_frames()
 
     def name(self):
         return self.name
+
+    def _load_frames(self):
+        super()._load_frames("Assets/Lilie/Ability/Guardian_Siegrid", "ataque", 8)
