@@ -7,12 +7,16 @@ with open("SavedCampaing/saved1.json", "r") as f:
 
 class Cliffside_Hamlet_Youth(Ability):
     def __init__(self):
+        level = saved["abilities"][2]["level"]
+        # En el juego original el cooldown baja con el nivel: 2.7s de base,
+        # 2.4s desde nivel 2, 2.1s desde nivel 4.
+        cooldown = 2.1 if level >= 4 else 2.4 if level >= 2 else 2.7
         super().__init__(
             name="Cliffside Hamlet Youth",
-            cooldown=2.4,
+            cooldown=cooldown,
             uses=18,
             baseDamage=50,
-            level=saved["abilities"][2]["level"],
+            level=level,
             frames=[],
             animation_speed=4,
             scale=0.35,

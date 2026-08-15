@@ -9,8 +9,8 @@ class Fungal_Sorcerer(Ability):
     def __init__(self):
         super().__init__(
             name="Fungal Sorcerer",
-            cooldown=0.0,
-            uses=99999,
+            cooldown=6.0,
+            uses=12,
             baseDamage=50,
             level=saved["abilities"][3]["level"],
             frames=[],
