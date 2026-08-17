@@ -35,15 +35,18 @@ reloj.tick(con.CLOCK_FPS)
 
 lili = Lilie(data["player"]["x"], data["player"]["y"], 120, 120)
 
-# Cargar la imagen del Nivel 3 desde la ruta exacta de tus assets
-imagen_mapa = pygame.image.load("Assets/Lilie/map/tileset_mapa/Fondos/Nivel 3.jpeg").convert()
-imagen_mapa = pygame.transform.scale(imagen_mapa, (con.WIDTH, con.HEIGHT))
+# --- INTEGRACIÓN DEL MAPA ---
+# 1. Cargar la imagen original del Nivel 3
+imagen_mapa_original = pygame.image.load("Assets/Lilie/map/tileset_mapa/Fondos/Nivel 3.jpeg").convert()
+
+# 2. Escalarla suavemente (smoothscale) para que llene toda la pantalla (con.WIDTH x con.HEIGHT)
+imagen_mapa = pygame.transform.smoothscale(imagen_mapa_original, (con.WIDTH, con.HEIGHT))
+# --- FIN INTEGRACIÓN MAPA ---
 
 # Jefes de prueba
-# probar que los ataques de Lilie realmente hacen daño y matan.
 jefes = [
     #Guardian_Siegrid(data["player"]["x"] + 300, con.GROUND_Y - 200),
-    #Dark_Witch_Eleine(data["player"]["x"] + 600),
+    Dark_Witch_Eleine(data["player"]["x"] + 600),
 ]
 
 acciones_activas = []
@@ -82,8 +85,10 @@ while True:
     # Renderizado o Dibujo en pantalla
     screen.fill((20, 20, 30))
 
-    # 1. Dibujar el mapa del Nivel 3 como fondo primero
+    # --- DIBUJO DEL MAPA ---
+    # Dibuja la versión escalada y suavizada del mapa como fondo en la esquina (0,0)
     screen.blit(imagen_mapa, (0, 0))
+    # --- FIN DIBUJO MAPA ---
 
     # 2. Dibujar a los jefes
     for jefe in jefes:
