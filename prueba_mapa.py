@@ -72,8 +72,15 @@ def main(ruta):
             frames_en_suelo += 1
         y_maxima = max(y_maxima, lili.y)
         x_final = lili.x
-        if (camara.vista.left < 0 or camara.vista.right > mapa.width
-                or camara.vista.top < 0 or camara.vista.bottom > mapa.height):
+        # Sólo se controla el eje en el que el mundo es más grande que la
+        # ventana. Cuando es más chico (zona_2.2, zona_2.5 y zona_3 miden menos
+        # de 720px de alto) la cámara lo centra a propósito y la vista sobresale
+        # por los dos lados: eso es la franja negra, no un error de encuadre.
+        fuera_x = (mapa.width > camara.vista.width
+                   and (camara.vista.left < 0 or camara.vista.right > mapa.width))
+        fuera_y = (mapa.height > camara.vista.height
+                   and (camara.vista.top < 0 or camara.vista.bottom > mapa.height))
+        if fuera_x or fuera_y:
             camara_fuera += 1
 
         if frame in (0, FRAMES // 3, 2 * FRAMES // 3, FRAMES - 1):

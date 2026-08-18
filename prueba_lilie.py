@@ -75,12 +75,24 @@ def main():
                              f"animacion de salto")
         del mapa
 
-    # El resto se prueba en un mapa con relieve de sobra.
-    mapa = Mapa(con.MAPAS_PATH + "mapa_zona_1.tmx")
+    # El resto (saltar, caerse, no flotar) es física de Lilie y no depende del
+    # arte, así que se prueba sobre una plataforma suelta hecha acá. Antes se
+    # usaba un .tmx concreto y el test se rompía cada vez que alguien renombraba
+    # o rediseñaba ese nivel: hay mapas sin ningún borde por el que caerse
+    # (zona_2.3, zona_2.4) y otros con pisos apilados cada 130px (zona_3), y en
+    # los dos casos fallaba el test sin que Lilie tuviera nada malo.
+    PISO = pygame.Rect(0, 800, 1200, 200)
+    suelta = [PISO]
 
     # Salta y vuelve al piso.
-    lili, ys, _, _ = simular(mapa, Lilie,
-                             lambda f: ["jump"] if f < 30 else [], frames=240)
+    lili = Lilie(0, 0, 120, 120)
+    lili.x, lili.y = 200, PISO.top - 120
+    lili.update(0, suelta)
+    ys = []
+    for f in range(240):
+        lili.movements(["jump"] if f < 30 else [])
+        lili.update(DT, suelta)
+        ys.append(lili.y)
     y0, pico = ys[0], min(ys)
     print(f"\n  salto: sube {y0 - pico:.0f}px y vuelve a y={lili.y:.0f} "
           f"(salio de {y0:.0f}) suelo={lili.on_ground}")
@@ -90,16 +102,13 @@ def main():
         problemas.append("no aterriza despues de saltar")
 
     # Se cae al salirse de una plataforma: la sonda de suelo no la deja flotando.
-    piso = max((r for r in mapa.colisiones
-                if r.width > 200 and r.top > mapa.height * 0.4),
-               key=lambda r: r.width)
     lili = Lilie(0, 0, 120, 120)
-    lili.x, lili.y, lili.vel_y = piso.right - 100, piso.top - 120, 0
-    lili.update(0, mapa.colisiones)
+    lili.x, lili.y, lili.vel_y = PISO.right - 100, PISO.top - 120, 0
+    lili.update(0, suelta)
     y_antes = lili.y
     for _ in range(120):
         lili.movements(["right"])
-        lili.update(DT, mapa.colisiones)
+        lili.update(DT, suelta)
     caida = lili.y - y_antes
     print(f"  caida al salir de la plataforma: {caida:.0f}px")
     if caida < 20:
@@ -107,8 +116,8 @@ def main():
 
     # En el aire no se cree apoyada.
     lili = Lilie(0, 0, 120, 120)
-    lili.x, lili.y, lili.vel_y = piso.centerx, piso.top - 600, 0
-    lili.update(DT, mapa.colisiones)
+    lili.x, lili.y, lili.vel_y = PISO.centerx, PISO.top - 600, 0
+    lili.update(DT, suelta)
     print(f"  en el aire: suelo={lili.on_ground} vel_y={lili.vel_y:.2f}")
     if lili.on_ground:
         problemas.append("en pleno aire se cree apoyada")

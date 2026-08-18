@@ -41,9 +41,6 @@ MUERTE_ESPERA_MS = 3000   # espera antes de reiniciar el juego desde cero
 
 # Cámara
 CAMARA_ZONA_MUERTA = 300 # Pixeles desde el borde antes de que la cámara empiece a seguir
-CAMARA_SUAVIZADO = 0.1   # Interpolación (0.1 es un seguimiento suave)
-# Cámara
-CAMARA_ZONA_MUERTA = 300 # Pixeles desde el borde antes de que la cámara empiece a seguir
 CAMARA_ZONA_MUERTA_Y = 160 # Igual pero en vertical: sin esto la cámara sube y
                            # baja con cada salto y marea
 CAMARA_SUAVIZADO = 0.1   # Interpolación (0.1 es un seguimiento suave)
@@ -54,21 +51,14 @@ MAPAS_PATH = "Assets/Lilie/map/tileset_map_1/maps/"
 # Orden en el que se encadenan los niveles. Saliendo por la derecha se pasa al
 # siguiente de la lista y por la izquierda se vuelve al anterior; en las dos
 # puntas de la cadena no se sale, sólo se topa contra el borde.
-#
-# OJO: mapa_nivel_1.tmx y mapa_nivel_2.tmx son idénticos y los dos muestran
-# Nivel 2.jpeg. "Nivel 1.jpeg" tiene tileset (fondo_visual_1.1.tsx) pero
-# ningún .tmx lo usa, así que el segundo nivel se va a ver igual que el
-# tercero hasta que rehagas mapa_nivel_1.tmx en Tiled sobre ese tileset.
 ORDEN_NIVELES = [
-    MAPAS_PATH + "zona_3.tmx",        # Nivel 3.jpeg
-    MAPAS_PATH + "zona_1.tmx",        # deberia ser Nivel 1.jpeg
-    MAPAS_PATH + "zona_2.tmx",        # Nivel 2.jpeg
-    MAPAS_PATH + "zona_2.1.tmx",         # zona 2.jpeg
-    MAPAS_PATH + "zona_1.tmx",         # Zona 1.jpeg
-    MAPAS_PATH + "zona_1.4.tmx", 
-    MAPAS_PATH + "zona_1.3.tmx",
-    MAPAS_PATH + "zona_1.2.tmx",
-    MAPAS_PATH + "zona_1.1.tmx",                                    
+    MAPAS_PATH + "mapa_nivel_3.tmx",        # Nivel 3.jpeg
+    MAPAS_PATH + "mapa_nivel_1.tmx",        # deberia ser Nivel 1.jpeg
+    MAPAS_PATH + "mapa_nivel_2.tmx",        # Nivel 2.jpeg
+    MAPAS_PATH + "mapa_zona_2.tmx",         # zona 2.jpeg
+    MAPAS_PATH + "mapa_zona_1.tmx",         # Zona 1.jpeg
+    MAPAS_PATH + "mapa_zona_finalboss.tmx", # zona_1_final_boss.jpeg
+    MAPAS_PATH + "mapa_zona_3.tmx",         # zona 3_nivel2.jpeg
 ]
 MAPA_INICIAL = ORDEN_NIVELES[0]
 # Duración del fundido a negro con el que se tapa la carga del nivel nuevo.
@@ -77,20 +67,27 @@ NIVEL_TRANSICION_MS = 220
 # verticales que caen enteras ahí adentro son el marco de la captura, no
 # geometría del nivel, y se descartan para poder salir caminando.
 NIVEL_MARGEN_SALIDA = 200
+
 # Cuántos píxeles de pantalla mide una unidad de Tiled.
 #
-# Los .tmx no son tilesets dibujados: son capturas del juego original pegadas
-# una al lado de la otra en una imagen de 1600px, y encima los rectángulos de
-# colisión. Dentro de esas capturas el personaje mide unas 15 unidades de alto.
-# Como el sprite de Lilie mide ~90px de cuerpo, para que quede del tamaño que
-# el nivel supone hace falta 90/15 = 6 píxeles por unidad. Con menos, Lilie
-# entra gigante y no pasa por los huecos (a escala 1.6 queda tapiada a los
-# 650px de haber arrancado la zona 1).
+# La mayoría de los niveles ya están dibujados a resolución de juego: un piso
+# mide 30-40 unidades de alto y de un piso al de arriba hay ~130, así que
+# Lilie (120px) entra justo. Ésos van a escala 1.
+MAPA_ESCALA = 1.0
+# Las cuatro primeras zonas son la excepción: no son arte a resolución, son
+# capturas del juego original pegadas una al lado de la otra en una tira de
+# 1600x~280px. Ahí el personaje mide unas 15 unidades de alto, así que para
+# que el sprite (~90px de cuerpo) quede del tamaño que el nivel supone hacen
+# falta 90/15 = 6 píxeles por unidad. Con menos, Lilie entra gigante y no pasa
+# por los huecos (a escala 1.6 queda tapiada a los 650px de zona_1).
 #
-# Subirlo agranda y desenfoca el nivel; bajarlo lo deja nítido pero Lilie no
-# entra por los pasajes. None = automática (el mapa llena el alto de la
-# ventana), útil sólo para mirar un nivel entero de un vistazo.
-MAPA_ESCALA = 6.0
+# La clave es el nombre del .tmx; lo que no esté acá usa MAPA_ESCALA.
+MAPA_ESCALAS = {
+    "zona_1.tmx": 6.0,
+    "zona_1.1.tmx": 6.0,
+    "zona_1.2.tmx": 6.0,
+    "zona_1.4.tmx": 6.0,
+}
 # Los fondos son .jpeg pintados, no pixel art: al agrandarlos conviene
 # interpolar. Poner en False si algún día el arte pasa a ser pixel art.
 MAPA_SUAVIZAR = True

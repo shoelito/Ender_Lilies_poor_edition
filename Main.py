@@ -55,16 +55,9 @@ niveles = Niveles()
 # hay, si no la primera plataforma pisable).
 lili = Lilie(data["player"]["x"], data["player"]["y"], 120, 120)
 
-# Cargar el primer nivel: esto inicializa niveles.mapa y niveles.camara
-niveles.cargar(3, lili)
-
-# --- INTEGRACIÓN DEL MAPA ---
-# 1. Cargar la imagen original del Nivel 3
-imagen_mapa_original = pygame.image.load("Assets/Lilie/map/tileset_mapa/Fondos/Nivel 3.jpeg").convert()
-
-# 2. Escalarla suavemente (smoothscale) para que llene toda la pantalla (con.WIDTH x con.HEIGHT)
-imagen_mapa = pygame.transform.smoothscale(imagen_mapa_original, (con.WIDTH, con.HEIGHT))
-# --- FIN INTEGRACIÓN MAPA ---
+# Cargar el primer nivel de la cadena: esto inicializa niveles.mapa y
+# niveles.camara, y deja a Lilie parada en el spawn del .tmx.
+niveles.cargar(0, lili)
 
 # Jefes de prueba
 jefes = [
@@ -109,7 +102,19 @@ while True:
 
     if not congelado:
         lili.movements(acciones_activas, screen)
-        lili.update(dt)
+        lili.update(dt, niveles.mapa.colisiones)
+
+        # Cambio de nivel: al llegar a un costado se pasa al nivel que sigue en
+        # con.ORDEN_NIVELES, entrando por el borde contrario. En las puntas de
+        # la cadena no hay a dónde ir, así que sólo topa contra el borde.
+        lado = niveles.mapa.borde_alcanzado(lili)
+        if lado is None or not niveles.cambiar(lili, lado, screen):
+            niveles.mapa.limitar(lili)
+
+        # Red de seguridad: si se cae por un agujero vuelve al spawn en vez de
+        # seguir cayendo para siempre fuera del mundo.
+        if niveles.mapa.se_cayo(lili):
+            niveles.mapa.colocar(lili)
 
     jefes_vivos = []
     for jefe in jefes:
@@ -124,12 +129,17 @@ while True:
     
     jefes = jefes_vivos
 
-    # Renderizado o Dibujo en pantalla
+    # Renderizado o Dibujo en el mundo de la cámara. `mapa` y `camara` salen de
+    # `niveles` porque los dos cambian al pasar de nivel.
     screen.fill((20, 20, 30))
+    niveles.camara.limpiar((20, 20, 30))
 
     # --- DIBUJO DEL MAPA ---
-    # Dibuja la versión escalada y suavizada del mapa como fondo en la esquina (0,0)
-    niveles.camara.mundo.blit(imagen_mapa, (0, 0))
+    # El nivel ya viene armado en una sola superficie; se vuelca nada más el
+    # pedazo que la cámara está mirando.
+    niveles.mapa.draw(niveles.camara.mundo, niveles.camara.vista)
+    if con.MAPA_DEBUG_COLISIONES:
+        niveles.mapa.draw_colisiones(niveles.camara.mundo, niveles.camara.vista)
     # --- FIN DIBUJO MAPA ---
 
     # 2. Dibujar a los jefes en el mundo
