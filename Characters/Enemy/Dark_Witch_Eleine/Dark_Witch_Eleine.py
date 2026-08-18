@@ -1,12 +1,14 @@
 """Bruja Oscura Eleine, jefa de área del Bosque de las Brujas."""
 import math
+import os
 import random
 
 import pygame
 
 import Constantes as con
+from Characters.CharacterClass import Character
 from Characters.Enemy.EnemyClass import Enemy
-from Characters.Enemy.Proyectil import Proyectil, abanico, circulo
+from Characters.Enemy.Proyectil import Proyectil, abanico, circulo, cargar_frames
 from Characters.Enemy.Dark_Witch_Eleine.Hechizo import Hechizo
 
 
@@ -68,6 +70,13 @@ class Dark_Witch_Eleine(Enemy):
     # "Inmediatamente después" de fuego o esferas, en la fase III.
     CHANCE_ENREDADERAS = 1.0
 
+    SPRITE_FOLDER = "Enemy/Dark_Witch_Eleine"
+    # Altura en pixeles que debe medir su cuerpo visible (Lilie mide ~85). De
+    # ahi salen width/height, respetando la proporcion del lienzo: fijarlos a
+    # mano la achataria, porque el sprite es casi cuadrado.
+    ALTO_CUERPO = 170
+
+    ALTO_TORBELLINO = 230    # px de alto del embudo ya en pantalla
     ALTURA_VUELO = 250       # px sobre el piso a los que flota
     AMPLITUD_FLOTE = 18      # cuánto sube y baja mientras espera
     DIST_PREFERIDA = 330     # distancia a la que trata de mantenerse
@@ -79,6 +88,14 @@ class Dark_Witch_Eleine(Enemy):
 
         self.facing_right = False
         self.phase = 1
+
+        self.frame_index = 0
+        self.anim_timer = 0
+        self.anim_speed = 130
+        self._cargar_arte()
+        if self.has_sprites:
+            self.width, self.height = self._tamano_desde_arte()
+            y = con.GROUND_Y - self.ALTURA_VUELO - self.height
         self.umbral_fase2 = max_health * 0.66
         self.umbral_fase3 = max_health * 0.33
 
@@ -97,7 +114,59 @@ class Dark_Witch_Eleine(Enemy):
         self.transicion_duracion = 1200
         self.velocidad = 2.2
         self._flote = random.uniform(0, math.pi * 2)
-        self._base_y = float(self.y)
+        self.y = y
+        self._base_y = float(y)
+
+    # ------------------------------------------------------------------ arte
+    def _cargar_arte(self):
+        """Carga el cuerpo y los sprites de los proyectiles.
+
+        Si falta alguna carpeta se sigue sin ella: el cuerpo cae al rectangulo
+        de color de Enemy y los proyectiles al circulo de respaldo."""
+        carpeta = os.path.join(self.SPRITE_FOLDER, "fase1", "vuelo")
+        try:
+            vuelo = Character._load_frames(carpeta, "vuelo", 0)
+        except (FileNotFoundError, OSError):
+            vuelo = []
+
+        if vuelo:
+            # Todavia tiene una sola animacion de cuerpo, asi que los estados
+            # que hereda de Enemy apuntan todos a ella.
+            self.animations = {e: vuelo for e in ("idle", "hurt", "dead")}
+            bordes = [Character._alpha_bounds(f) for f in vuelo]
+            self.animation_bounds = {e: bordes for e in self.animations}
+        else:
+            self.animations = {}
+            self.animation_bounds = {}
+
+        base = os.path.join(self.SPRITE_FOLDER, "proyectiles")
+        # El recorte de la bola de fuego es chico al lado de ella; se agranda
+        # para que se lea en pantalla.
+        self.frames_bolafuego = cargar_frames(os.path.join(base, "bolafuego"), escala=1.5)
+        self.frames_esfera = cargar_frames(os.path.join(base, "esfera"))
+        # El recorte del torbellino es enorme (475x360); se achica para que el
+        # embudo mida ALTO_TORBELLINO en pantalla.
+        escala_t = self.ALTO_TORBELLINO / 355.0
+        self.frames_torbellino = cargar_frames(
+            os.path.join(base, "torbellino"), escala=escala_t)
+        self.frames_torbellino_fin = cargar_frames(
+            os.path.join(base, "torbellino_fin"), escala=escala_t)
+
+    @property
+    def has_sprites(self):
+        return bool(self.animations)
+
+    def _tamano_desde_arte(self):
+        """width/height que hacen que su cuerpo mida ALTO_CUERPO pixeles,
+        conservando la proporcion del lienzo."""
+        frames = self.animations["idle"]
+        caja = self.animation_bounds["idle"][0]
+        if not caja.height:
+            return self.width, self.height
+        raw = frames[0]
+        alto = round(self.ALTO_CUERPO * raw.get_height() / caja.height)
+        ancho = round(alto * raw.get_width() / raw.get_height())
+        return ancho, alto
 
     # ----------------------------------------------------------------- fases
     @property
@@ -182,23 +251,35 @@ class Dark_Witch_Eleine(Enemy):
         if hechizo.name == "cono_fuego":
             self.proyectiles += abanico(x, y, tx, ty, cantidad=6, apertura=48,
                                         rapidez=6.5, damage=hechizo.damage,
-                                        radius=12, color=(235, 130, 60),
-                                        lifetime=4000, nombre="fuego")
+                                        radius=20, color=(235, 130, 60),
+                                        lifetime=4000, frames=self.frames_bolafuego,
+                                        rotar=True, nombre="fuego")
 
         elif hechizo.name in ("esfera", "esfera_doble"):
             ang = math.atan2(ty - y, tx - x)
             self.proyectiles.append(
                 Proyectil(x, y, math.cos(ang) * 8.5, math.sin(ang) * 8.5,
-                          damage=hechizo.damage, radius=15,
+                          damage=hechizo.damage, radius=20,
                           color=(170, 90, 235), homing=0.08,
                           lifetime=3000, muere_en_suelo=True,
+                          frames=self.frames_esfera, girar=180,
                           nombre="esfera"))
 
         elif hechizo.name == "torbellino":
-            self.torbellino = Proyectil(x, con.GROUND_Y - 90, 0, 0,
+            # Se apoya en el piso, no flota a su altura: el embudo toca tierra.
+            alto = self.ALTO_TORBELLINO
+            centro_y = con.GROUND_Y - alto // 2
+            # El hitbox es el embudo, más angosto que el remolino dibujado:
+            # las volutas de arriba se abren mucho y no deberían pegar.
+            self.torbellino = Proyectil(x, centro_y, 0, 0,
                                         damage=hechizo.damage, radius=52,
+                                        hitbox_size=(int(alto * 0.55), alto),
                                         color=(120, 70, 175), lifetime=12000,
-                                        contact_interval=700, nombre="torbellino")
+                                        contact_interval=700,
+                                        frames=self.frames_torbellino,
+                                        frames_final=self.frames_torbellino_fin,
+                                        anim_ms=70, anim_ms_final=200,
+                                        nombre="torbellino")
             self.proyectiles.append(self.torbellino)
 
         elif hechizo.name == "enredaderas":
@@ -212,8 +293,9 @@ class Dark_Witch_Eleine(Enemy):
             desfase = 0.0 if self.descargas_hechas == 0 else math.pi / 12
             self.proyectiles += circulo(x, y, cantidad=12, rapidez=4.8,
                                         desfase=desfase, damage=hechizo.damage,
-                                        radius=12, color=(205, 105, 225),
-                                        lifetime=5000, nombre="lluvia")
+                                        radius=20, color=(205, 105, 225),
+                                        lifetime=5000, frames=self.frames_esfera,
+                                        girar=180, nombre="lluvia")
 
     def _teletransportar(self, target, arriba_del_todo=False):
         if target is None:
@@ -328,7 +410,18 @@ class Dark_Witch_Eleine(Enemy):
         """Nunca toca el suelo: se mantiene en el aire con un vaivén suave."""
         self._flote += dt / 420.0
         self.y = self._base_y + math.sin(self._flote) * self.AMPLITUD_FLOTE
-        self.hitbox.update(self.x, self.y, self.width, self.height)
+
+        if not self.has_sprites:
+            self.hitbox.update(self.x, self.y, self.width, self.height)
+            return
+
+        frames = self.animations[self.state]
+        self.anim_timer += dt
+        if self.anim_timer >= self.anim_speed:
+            self.anim_timer -= self.anim_speed
+            self.frame_index = (self.frame_index + 1) % len(frames)
+        # El hitbox sigue los pixeles visibles, no todo el lienzo.
+        Character._sync_hitbox(self)
 
     # ----------------------------------------------------------------- draw
     def draw(self, screen):
@@ -337,8 +430,15 @@ class Dark_Witch_Eleine(Enemy):
         if self.state == "dead":
             return
 
-        color = (255, 255, 255) if self.state == "hurt" else self.color
-        pygame.draw.rect(screen, color, (self.x, self.y, self.width, self.height))
+        if self.has_sprites:
+            frame, _ = Character._get_scaled_frame(self)
+            if self.state == "hurt":
+                frame = frame.copy()
+                frame.fill((255, 90, 90), special_flags=pygame.BLEND_RGB_ADD)
+            screen.blit(frame, (self.x, self.y))
+        else:
+            color = (255, 255, 255) if self.state == "hurt" else self.color
+            pygame.draw.rect(screen, color, (self.x, self.y, self.width, self.height))
         if self.show_hitbox:
             pygame.draw.rect(screen, (255, 0, 0), self.hitbox, 2)
         self._draw_health_bar(screen)

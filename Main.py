@@ -37,8 +37,10 @@ lili = Lilie(data["player"]["x"], data["player"]["y"], 120, 120)
 
 # Cargar la imagen del Nivel 3 desde la ruta exacta de tus assets
 imagen_mapa = pygame.image.load("Assets/Lilie/map/tileset_mapa/Fondos/Nivel 3.jpeg").convert()
+imagen_mapa = pygame.transform.scale(imagen_mapa, (con.WIDTH, con.HEIGHT))
 
 # Jefes de prueba
+# probar que los ataques de Lilie realmente hacen daño y matan.
 jefes = [
     #Guardian_Siegrid(data["player"]["x"] + 300, con.GROUND_Y - 200),
     #Dark_Witch_Eleine(data["player"]["x"] + 600),
