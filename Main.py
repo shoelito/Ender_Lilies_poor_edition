@@ -55,6 +55,9 @@ niveles = Niveles()
 # hay, si no la primera plataforma pisable).
 lili = Lilie(data["player"]["x"], data["player"]["y"], 120, 120)
 
+# Cargar el primer nivel: esto inicializa niveles.mapa y niveles.camara
+niveles.cargar(3, lili)
+
 # --- INTEGRACIÓN DEL MAPA ---
 # 1. Cargar la imagen original del Nivel 3
 imagen_mapa_original = pygame.image.load("Assets/Lilie/map/tileset_mapa/Fondos/Nivel 3.jpeg").convert()
@@ -118,28 +121,30 @@ while True:
             vistos.add(jefe.VIDEO_MUERTE)
             video_pendiente = jefe.VIDEO_MUERTE
             fundido_hasta = pygame.time.get_ticks() + con.VIDEO_FUNDIDO_MS
+    
+    jefes = jefes_vivos
 
     # Renderizado o Dibujo en pantalla
     screen.fill((20, 20, 30))
 
     # --- DIBUJO DEL MAPA ---
     # Dibuja la versión escalada y suavizada del mapa como fondo en la esquina (0,0)
-    screen.blit(imagen_mapa, (0, 0))
+    niveles.camara.mundo.blit(imagen_mapa, (0, 0))
     # --- FIN DIBUJO MAPA ---
 
     # 2. Dibujar a los jefes en el mundo
     for jefe in jefes:
-        jefe.draw(camara.mundo)
+        jefe.draw(niveles.camara.mundo)
 
     # 3. Dibujar a Lilie encima del mapa en el mundo
     if hasattr(lili, 'draw'):
-        lili.draw(camara.mundo, jefes_vivos)
+        lili.draw(niveles.camara.mundo, jefes_vivos)
 
     # 4. Actualizar la cámara para que siga a Lilie (inmediato=False para suavizado)
-    camara.seguir(lili.hitbox)
+    niveles.camara.seguir(lili.hitbox)
 
     # 5. Volcar lo que ve la cámara a la pantalla real
-    camara.volcar(screen)
+    niveles.camara.volcar(screen)
 
     # 6. Dibujar el HUD directamente sobre la pantalla (queda fijo)
     lili.draw_hud(screen)
