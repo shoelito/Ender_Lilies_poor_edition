@@ -1,0 +1,37 @@
+{
+    "activeFile": "mapa_zona_finalboss.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "fondo_visual_1.1.tsx": {
+            "scaleInDock": 0.33,
+            "scaleInEditor": 0.5
+        },
+        "mapa_zona_finalboss.tmx": {
+            "scale": 1,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 671,
+                "y": 113
+            }
+        },
+        "zona_1_final_boss.tsx": {
+            "scaleInDock": 0.33,
+            "scaleInEditor": 1
+        }
+    },
+    "last.imagePath": "C:/Users/hp/Downloads",
+    "map.lastUsedFormat": "tmx",
+    "openFiles": [
+        "mapa_zona_finalboss.tmx",
+        "zona_1_final_boss.tsx"
+    ],
+    "project": "mapa_nivel_1.1.tiled-project",
+    "recentFiles": [
+        "zona_1_final_boss.tsx",
+        "mapa_zona_finalboss.tmx",
+        "fondo_visual_1.1.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx"
+}

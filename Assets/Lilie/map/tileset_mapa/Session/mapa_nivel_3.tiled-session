@@ -1,0 +1,44 @@
+{
+    "activeFile": "fondo_visual_3.tsx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "fondo_visual_2.tsx": {
+            "scaleInDock": 1
+        },
+        "fondo_visual_3.tsx": {
+            "scaleInDock": 0.125,
+            "scaleInEditor": 0.5
+        },
+        "mapa_nivel_1.tmx": {
+            "scale": 0.4942968749999999,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 639.2919235024499,
+                "y": 80.92302829144933
+            }
+        },
+        "mapa_nivel_3.tmx": {
+            "scale": 0.5,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 806,
+                "y": 122
+            }
+        }
+    },
+    "last.imagePath": "C:/Users/hp/Downloads",
+    "map.lastUsedFormat": "tmx",
+    "openFiles": [
+        "mapa_nivel_3.tmx",
+        "fondo_visual_3.tsx"
+    ],
+    "project": "mapa_nivel_3.tiled-project",
+    "recentFiles": [
+        "mapa_nivel_3.tmx",
+        "fondo_visual_3.tsx",
+        "mapa_nivel_1.tmx"
+    ],
+    "tileset.lastUsedFormat": "tsx"
+}

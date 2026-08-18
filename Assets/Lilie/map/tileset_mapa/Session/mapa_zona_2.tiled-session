@@ -1,0 +1,34 @@
+{
+    "activeFile": "mapa_zona_2.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "fondo_zona_2.tsx": {
+            "scaleInDock": 1.5,
+            "scaleInEditor": 0.33
+        },
+        "mapa_zona_2.tmx": {
+            "scale": 2,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 826,
+                "y": 92.5
+            }
+        }
+    },
+    "last.imagePath": "C:/Users/hp/Downloads",
+    "map.height": 30,
+    "map.lastUsedFormat": "tmx",
+    "map.width": 100,
+    "openFiles": [
+        "mapa_zona_2.tmx",
+        "fondo_zona_2.tsx"
+    ],
+    "project": "mapa_zona_2.tiled-project",
+    "recentFiles": [
+        "fondo_zona_2.tsx",
+        "mapa_zona_2.tmx"
+    ],
+    "tileset.lastUsedFormat": "tsx"
+}
