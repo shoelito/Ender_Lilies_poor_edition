@@ -38,9 +38,20 @@ class Camara:
         self.vista = pygame.Rect(0, 0, ancho_vista, alto_vista)
         self.limite = pygame.Rect(0, 0, ancho_mundo, alto_mundo)
 
+        # Posición real de la vista. `self.vista` es un Rect y un Rect guarda
+        # enteros: al interpolar, un avance de 0.9px se truncaba a 0 y la
+        # cámara se quedaba clavada a unos píxeles del objetivo para siempre.
+        # El decimal vive acá y se copia redondeado al Rect.
+        self._x = 0.0
+        self._y = 0.0
+
         # Zona muerta: mientras el objetivo esté dentro de esta franja central
         # la cámara no se mueve. Evita que temblequee con cada pasito.
         self.zona_muerta_x = con.CAMARA_ZONA_MUERTA
+        # Lo mismo en vertical. Mientras el mundo medía una pantalla de alto no
+        # hacía falta, pero con el mapa a escala real el nivel es más alto que
+        # la ventana y sin franja muerta la cámara acompaña cada salto.
+        self.zona_muerta_y = getattr(con, "CAMARA_ZONA_MUERTA_Y", 160)
         # 0 = no sigue, 1 = pega el salto instantáneo. Los valores bajos dan
         # ese arrastre suave típico de los metroidvania.
         self.suavizado = con.CAMARA_SUAVIZADO
@@ -48,27 +59,29 @@ class Camara:
         self.color_borde = (0, 0, 0)
 
     # ------------------------------------------------------------ seguimiento
-    def _objetivo_x(self, foco):
-        """Dónde debería estar el borde izquierdo de la vista."""
-        deseado = self.vista.x
-        limite_izq = self.vista.x + self.zona_muerta_x
-        limite_der = self.vista.right - self.zona_muerta_x
-        if foco.centerx < limite_izq:
-            deseado = foco.centerx - self.zona_muerta_x
-        elif foco.centerx > limite_der:
-            deseado = foco.centerx - self.vista.width + self.zona_muerta_x
-        return deseado
+    @staticmethod
+    def _objetivo(centro, borde, largo, margen):
+        """Borde de la vista para un eje: si el objetivo sigue dentro de la
+        franja central no se mueve nada, y si se pasó, se corre lo justo para
+        dejarlo de vuelta sobre el borde de esa franja."""
+        if centro < borde + margen:
+            return centro - margen
+        if centro > borde + largo - margen:
+            return centro - largo + margen
+        return borde
 
     def seguir(self, foco, inmediato=False):
         """Acerca la vista al objetivo (un Rect en coordenadas del mundo)."""
-        destino_x = self._objetivo_x(foco)
-        destino_y = foco.centery - self.vista.height // 2
+        destino_x = self._objetivo(foco.centerx, self._x,
+                                   self.vista.width, self.zona_muerta_x)
+        destino_y = self._objetivo(foco.centery, self._y,
+                                   self.vista.height, self.zona_muerta_y)
 
         if inmediato:
-            self.vista.x, self.vista.y = destino_x, destino_y
+            self._x, self._y = destino_x, destino_y
         else:
-            self.vista.x += (destino_x - self.vista.x) * self.suavizado
-            self.vista.y += (destino_y - self.vista.y) * self.suavizado
+            self._x += (destino_x - self._x) * self.suavizado
+            self._y += (destino_y - self._y) * self.suavizado
 
         self._encajar()
 
@@ -76,14 +89,16 @@ class Camara:
         """La vista nunca se sale del mundo. Si el mundo es más chico que la
         vista en algún eje, se centra en vez de dejar un borde negro."""
         if self.limite.width <= self.vista.width:
-            self.vista.centerx = self.limite.centerx
+            self._x = (self.limite.width - self.vista.width) / 2
         else:
-            self.vista.x = max(0, min(self.limite.width - self.vista.width, self.vista.x))
+            self._x = max(0, min(self.limite.width - self.vista.width, self._x))
 
         if self.limite.height <= self.vista.height:
-            self.vista.centery = self.limite.centery
+            self._y = (self.limite.height - self.vista.height) / 2
         else:
-            self.vista.y = max(0, min(self.limite.height - self.vista.height, self.vista.y))
+            self._y = max(0, min(self.limite.height - self.vista.height, self._y))
+
+        self.vista.topleft = (round(self._x), round(self._y))
 
     # ---------------------------------------------------------------- dibujo
     def volcar(self, pantalla):
@@ -99,7 +114,10 @@ class Camara:
         pantalla.blit(self.mundo, (sobra_x // 2, sobra_y // 2), self.vista)
 
     def limpiar(self, color=(20, 20, 30)):
-        self.mundo.fill(color)
+        """Borra el frame anterior. Sólo la franja visible: el mundo puede
+        medir varias pantallas de ancho y repintarlo entero es trabajo que
+        nadie llega a ver."""
+        self.mundo.fill(color, self.vista.clip(self.limite))
 
     def pintar_fondo(self, imagen):
         """Repite la imagen a lo ancho del mundo. Estirar un fondo de 16:9

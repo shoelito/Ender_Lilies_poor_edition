@@ -1,3 +1,4 @@
+import Camara
 import os
 import pygame
 import sys
@@ -9,9 +10,7 @@ from Characters.Lilie.Lilie import Lilie
 from Characters.Enemy.Guardian_Siegrid import Guardian_Siegrid
 from Characters.Enemy.Dark_Witch_Eleine import Dark_Witch_Eleine
 import json
-import Mundo
-from Camara import Camara
-from Mapa import Mapa
+from Niveles import Niveles
 from movements import handle_inputs
 
 pygame.init()
@@ -44,24 +43,30 @@ with open(f"SavedCampaing/PreSaved{NumeroDePartida}.json", "r") as f:
 Video.reproducir(screen, "partida")
 reloj.tick(con.CLOCK_FPS)
 
+# --- INTEGRACIÓN DEL MAPA Y CÁMARA ---
+# `Niveles` es dueño del mapa y de la cámara: los dos cambian juntos al pasar
+# de un nivel al siguiente, así que se los usa siempre como niveles.mapa y
+# niveles.camara en vez de guardarlos en variables que quedarían viejas.
+niveles = Niveles()
+
+# Lilie arranca parada en el spawn del primer nivel. Las coordenadas del save
+# son de cuando el mundo medía una pantalla, así que no sirven para ubicarla
+# dentro de un nivel de Tiled; el punto lo manda el .tmx (objeto "spawn" si lo
+# hay, si no la primera plataforma pisable).
 lili = Lilie(data["player"]["x"], data["player"]["y"], 120, 120)
 
-# --- INTEGRACIÓN DEL MAPA Y CÁMARA ---
-# 1. Cargar el mapa Tiled (.tmx)
-mapa = Mapa("Assets/Lilie/map/tileset_mapa/Mapas/mapa_nivel_3.tmx")
+# --- INTEGRACIÓN DEL MAPA ---
+# 1. Cargar la imagen original del Nivel 3
+imagen_mapa_original = pygame.image.load("Assets/Lilie/map/tileset_mapa/Fondos/Nivel 3.jpeg").convert()
 
-# 2. Inicializar la cámara con las dimensiones reales del mapa
-# Los proyectiles y los jefes usaban con.WIDTH como borde del mundo; ahora el
-# nivel lo define el .tmx, asi que hay que avisarles cuanto mide.
-Mundo.definir(mapa.width, mapa.height)
-
-camara = Camara(mapa.width, mapa.height)
-# --- FIN INTEGRACIÓN MAPA Y CÁMARA ---
+# 2. Escalarla suavemente (smoothscale) para que llene toda la pantalla (con.WIDTH x con.HEIGHT)
+imagen_mapa = pygame.transform.smoothscale(imagen_mapa_original, (con.WIDTH, con.HEIGHT))
+# --- FIN INTEGRACIÓN MAPA ---
 
 # Jefes de prueba
 jefes = [
     #Guardian_Siegrid(data["player"]["x"] + 300, con.GROUND_Y - 200),
-    Dark_Witch_Eleine(data["player"]["x"] + 600),
+    #Dark_Witch_Eleine(data["player"]["x"] + 600),
 ]
 
 acciones_activas = []
@@ -101,7 +106,7 @@ while True:
 
     if not congelado:
         lili.movements(acciones_activas, screen)
-        lili.update(dt, mapa.colisiones)
+        lili.update(dt)
 
     jefes_vivos = []
     for jefe in jefes:
@@ -114,12 +119,12 @@ while True:
             video_pendiente = jefe.VIDEO_MUERTE
             fundido_hasta = pygame.time.get_ticks() + con.VIDEO_FUNDIDO_MS
 
-    # Renderizado o Dibujo en el mundo de la cámara
-    camara.limpiar((20, 20, 30))
+    # Renderizado o Dibujo en pantalla
+    screen.fill((20, 20, 30))
 
     # --- DIBUJO DEL MAPA ---
-    # Dibuja todas las capas del mapa sobre el mundo de la cámara
-    mapa.draw(camara.mundo)
+    # Dibuja la versión escalada y suavizada del mapa como fondo en la esquina (0,0)
+    screen.blit(imagen_mapa, (0, 0))
     # --- FIN DIBUJO MAPA ---
 
     # 2. Dibujar a los jefes en el mundo

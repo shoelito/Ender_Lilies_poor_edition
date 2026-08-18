@@ -263,7 +263,14 @@ class Lilie(Character):
         # --- COLISIONES X ---
         # Usamos un rectángulo lógico fijo para el mapa, para que la animación no cause vibraciones.
         # Quitamos márgenes horizontales (ej. 30px) para que no choque con paredes estando lejos.
-        logical_rect = pygame.Rect(self.x + 30, self.y + 10, self.width - 60, self.height - 10)
+        # La holgura se le saca a la cabeza, nunca a los pies: el borde de abajo
+        # sigue siendo y+height porque es lo que apoya en el piso. Sin ella, un
+        # pasillo que mide justo lo mismo que ella es infranqueable (en
+        # mapa_zona_2 hay uno de 110px y el cuerpo mide 110), y a la larga la
+        # frenaba antes de llegar al nivel siguiente.
+        holgura = con.HOLGURA_TECHO
+        logical_rect = pygame.Rect(self.x + 30, self.y + 10 + holgura,
+                                   self.width - 60, self.height - 10 - holgura)
         
         for rect in colisiones:
             if logical_rect.colliderect(rect):
@@ -299,20 +306,60 @@ class Lilie(Character):
             self.vel_y = 0
             toco_suelo = True
 
+        # Apoyarse en el piso, de forma estable.
+        #
+        # Resolver el choque no alcanza. La gravedad suma 0.5px por frame y el
+        # Rect de colisión trabaja en enteros, así que estando quieta se
+        # repetía este ciclo: un frame se hunde medio píxel sin que el
+        # solapamiento llegue a 1px (no se resuelve nada, `toco_suelo` en
+        # False), al siguiente sí y se la empuja de vuelta. `y` alternaba entre
+        # 1368.0 y 1367.5 en 299 de cada 300 frames; al dibujar, ese medio
+        # píxel se trunca y el sprite temblaba 1px arriba y abajo a 60fps,
+        # que es lo que se veía como si saltara sin parar.
+        #
+        # En vez de eso se busca la superficie que tiene debajo de los pies y
+        # se la apoya exactamente encima. Así `y` queda quieta y entera
+        # mientras esté parada, y `on_ground` deja de depender de si este frame
+        # hubo choque o no.
+        if self.vel_y >= 0:
+            suelo = self._suelo_debajo(logical_rect, colisiones)
+            if suelo is not None:
+                self.y = suelo - self.height
+                self.vel_y = 0
+                toco_suelo = True
+
         if toco_suelo:
             self.jumpLimit = 2 if self.saved["double_jump"] else 1
-            
+
         self.on_ground = toco_suelo
 
-        # No se sale del nivel por los costados. Antes el mundo medía una
-        # pantalla y no hacía falta; ahora el ancho lo define el mapa.
-        self.x = Mundo.limitar_x(self.x, self.width)
-
-        # El hitbox se recalcula al final de todo: si no, se queda donde
-        # apareció y arrastra a todo lo que lo consulta (la cámara la seguiría
-        # sin moverse, y los golpes enemigos se resolverían contra el punto de
-        # aparición en vez de contra donde está).
+        # El hitbox se sincronizaba sólo en las salidas tempranas (muerta o
+        # inmovilizada), así que en el camino normal se quedaba clavado donde
+        # se construyó a Lilie. Mientras el mundo medía una pantalla casi no se
+        # notaba; con el mapa de Tiled sí, porque la cámara sigue este rect y
+        # se quedaba mirando siempre el mismo rincón del nivel.
         self._sync_hitbox()
+
+    @staticmethod
+    def _suelo_debajo(logical_rect, colisiones, alcance=con.SONDA_SUELO):
+        """Altura de la superficie sobre la que está apoyada, o None si no hay.
+
+        Mira una franja de `alcance` píxeles a cada lado de los pies. Esa
+        tolerancia cubre el hundimiento de un frame de gravedad y las juntas
+        desparejas entre plataformas vecinas: los mapas están dibujados a mano
+        y dos rectángulos pegados suelen tener el borde de arriba corrido un
+        par de píxeles.
+
+        Sólo cuentan los rectángulos cuyo *borde de arriba* cae dentro de esa
+        franja. Sin ese filtro, una pared alta al lado de la que está parada
+        también toca la sonda y su tope está metros más arriba: apoyarla ahí la
+        teletransportaría hasta la punta de la pared."""
+        sonda = pygame.Rect(logical_rect.x, logical_rect.bottom - alcance,
+                            logical_rect.width, alcance * 2)
+        pisos = [rect.top for rect in colisiones
+                 if sonda.colliderect(rect)
+                 and abs(rect.top - logical_rect.bottom) <= alcance]
+        return min(pisos) if pisos else None
 
     def draw(self, screen, enemies=()):
         frame, is_flip = Character._get_scaled_frame(self)
