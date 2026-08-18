@@ -12,6 +12,10 @@ GRAVITY = 0.5
 # Píxeles que se le descuentan a Lilie por arriba al chocar con el mapa. Le dan
 # aire para pasar por un hueco que mide justo su alto; los pies no se tocan.
 HOLGURA_TECHO = 8
+# Hasta cuántos píxeles por debajo de los pies se busca piso para considerarla
+# apoyada. Cubre el hundimiento de un frame de gravedad y las juntas
+# desparejas entre plataformas vecinas. Subirlo la deja "pisando" el aire.
+SONDA_SUELO = 4
 AXIS_DEADZONE = 0.5
 SHOW_HITBOX = True
 MAX_IMPURITY = 140

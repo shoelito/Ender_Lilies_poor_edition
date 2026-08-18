@@ -305,6 +305,19 @@ class Lilie(Character):
             self.vel_y = 0
             toco_suelo = True
 
+        # Estar en el piso no es lo mismo que haber chocado con él este frame.
+        # La gravedad la hunde 0.5px por frame y el Rect de colisión trabaja en
+        # enteros, así que un frame de cada dos el solapamiento no llega a 1px,
+        # no se resuelve nada y `toco_suelo` quedaba en False: parada quieta,
+        # `on_ground` alternaba 400 veces en 10s y la animación saltaba a
+        # "jump" un tercio del tiempo. Se pregunta directamente si hay algo
+        # sólido debajo de los pies.
+        if not toco_suelo and self.vel_y >= 0:
+            toco_suelo = self._hay_suelo_debajo(logical_rect, colisiones)
+            if toco_suelo:
+                # Que la caída no siga acumulando velocidad estando apoyada.
+                self.vel_y = 0
+
         if toco_suelo:
             self.jumpLimit = 2 if self.saved["double_jump"] else 1
 
@@ -316,6 +329,18 @@ class Lilie(Character):
         # notaba; con el mapa de Tiled sí, porque la cámara sigue este rect y
         # se quedaba mirando siempre el mismo rincón del nivel.
         self._sync_hitbox()
+
+    @staticmethod
+    def _hay_suelo_debajo(logical_rect, colisiones, alcance=con.SONDA_SUELO):
+        """True si hay algo sólido justo abajo de los pies.
+
+        `alcance` es la tolerancia en píxeles. Tiene que aguantar el hundimiento
+        de un frame de gravedad y las juntas entre plataformas vecinas: los
+        mapas están dibujados a mano y dos rectángulos pegados pueden quedar
+        con el borde de arriba desparejo por un par de píxeles."""
+        sonda = pygame.Rect(logical_rect.x, logical_rect.bottom,
+                            logical_rect.width, alcance)
+        return any(sonda.colliderect(rect) for rect in colisiones)
 
     def draw(self, screen, enemies=()):
         frame, is_flip = Character._get_scaled_frame(self)
