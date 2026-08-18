@@ -45,8 +45,6 @@ class Character:
         folder = os.path.join(con.ASSETS_PATH, folder)
         path = os.path.join(folder)
 
-        # Ordena por el número en el nombre del archivo (jump10 va después de
-        # jump9, no antes de jump2 como pasaría con un sort alfabético normal)
         def frame_sort_key(filename):
             match = re.search(r"(\d+)", filename)
             return (int(match.group(1)) if match else float("inf"), filename)
@@ -67,9 +65,6 @@ class Character:
             scaled = pygame.transform.flip(scaled, True, False)
         return (scaled, is_flip)
 
-    #Rect (en coordenadas del frame sin escalar) que encierra los píxeles
-    #no transparentes de un sprite, para armar hitboxes ajustadas al dibujo
-    #real en vez de a todo el lienzo width x height.
     @staticmethod
     def _alpha_bounds(surface):
         rects = pygame.mask.from_surface(surface).get_bounding_rects()
@@ -80,10 +75,34 @@ class Character:
             bounds.union_ip(r)
         return bounds
 
-    #Ajusta self.hitbox a los píxeles visibles del frame actual (según
-    #self.state/self.frame_index) en vez de al rectángulo width x height
-    #completo. Requiere que la subclase haya armado self.animation_bounds
-    #con Character._alpha_bounds() para cada frame de self.animations.
+    @staticmethod
+    def _core_bounds(surface, threshold=0.30):
+        mask = pygame.mask.from_surface(surface)
+        width, height = surface.get_size()
+
+        probe = pygame.mask.Mask((1, height), fill=True)
+        columns = [mask.overlap_area(probe, (x, 0)) for x in range(width)]
+
+        bounds = Character._alpha_bounds(surface)
+        peak = max(columns, default=0)
+        if peak <= 0:
+            return bounds
+
+        limit = peak * threshold
+        center = columns.index(peak)
+        left = center
+        while left - 1 >= 0 and columns[left - 1] >= limit:
+            left -= 1
+        right = center
+        while right + 1 < width and columns[right + 1] >= limit:
+            right += 1
+
+        left = max(bounds.left, left)
+        right = min(bounds.right, right + 1)
+        if right <= left:
+            return bounds
+        return pygame.Rect(left, bounds.y, right - left, bounds.height)
+
     def _sync_hitbox(self):
         frames = self.animations[self.state]
         index = self.frame_index % len(frames)

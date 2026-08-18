@@ -16,8 +16,11 @@ class Guardian_Siegrid(Ability):
             frames=[],
             animation_speed=5,
             scale=0.35,
-            offset_x=30, # Si es positivo, aparece más adelante
-            offset_y=-55) # Si es negativo, aparece más arriba
+            offset_x=30, # Si es positivo, aparece más adelante (Y siempre toca el piso)
+            anchor_once=True, # se queda donde se invocó, no sigue a Lilie
+            loop_count=3, # recorre la secuencia de sprites 3 veces
+            damage_on_loop=True, # hace daño una vez por cada vuelta completa
+            loop_sound="siegrid_mangual") # suena en cada una de las tres vueltas
         self._load_frames()
 
     def name(self):

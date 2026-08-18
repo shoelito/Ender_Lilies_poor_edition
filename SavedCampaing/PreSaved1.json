@@ -10,12 +10,14 @@
         "location": "starting_room",
         "abilities_selected": [
             [
-                "umbral_knight"
-            ],
-            [
                 "umbral_knight",
                 "guardian_siegrid",
                 "fungal_sorcerer"
+            ],
+            [
+                "floral_sorcerer",
+                "cliffside_hamlet_youth",
+                "dark_witch_eleine"
             ]
         ],
         "reliquies_equipped": []

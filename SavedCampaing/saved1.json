@@ -10,15 +10,15 @@
         "location": "starting_room",
         "abilities_selected": [
             [
-                "black_knight"
+                "umbral_knight"
             ],
             [
-                "black_knight"
+                "umbral_knight"
             ]
         ],
         "reliquies_equipped": []
     },
-    "double_jump": false,
+    "double_jump": true,
     "chapter": 1,
     "game_time": 0,
     "healing_prayers": 3,

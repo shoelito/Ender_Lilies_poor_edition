@@ -16,8 +16,9 @@ class Umbral_Knight(Ability):
             frames = [],
             animation_speed = 4,
             scale = 0.35,
-            offset_x = 30, # Si es positivo, aparece más adelante
-            offset_y = -75) # Si es negativo, aparece más arriba
+            offset_x = 30, # Si es positivo, aparece más adelante (Y siempre toca el piso)
+            roots_caster=True, # Lilie no puede moverse mientras ataca con esta habilidad
+            sound="golpe_caballero")
         self._load_frames()
 
     def Counter(self):

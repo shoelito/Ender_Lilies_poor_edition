@@ -1,4 +1,5 @@
 from Characters.Ability.Ability import Ability
+import Constantes as con
 import json
 
 with open("SavedCampaing/saved1.json", "r") as f:
@@ -20,8 +21,13 @@ class Cliffside_Hamlet_Youth(Ability):
             frames=[],
             animation_speed=4,
             scale=0.35,
-            offset_x=30, # Si es positivo, aparece más adelante
-            offset_y=-40) # Si es negativo, aparece más arriba
+            offset_x=30, # Si es positivo, aparece más adelante (arranca tocando el piso)
+            is_projectile=True,
+            projectile_speed=7, # con peso físico: forma un arco y cae al piso
+            projectile_gravity=con.GRAVITY,
+            projectile_launch_vy=-8,
+            sound="lanzamiento_gusano",   # al arrojarlo
+            impact_sound="impacto_gusano") # al chocar
         self._load_frames()
 
     def name(self):
