@@ -6,6 +6,8 @@ import random
 import pygame
 
 import Constantes as con
+import Sonidos
+import Mundo
 from Characters.CharacterClass import Character
 from Characters.Enemy.EnemyClass import Enemy
 from Characters.Enemy.Proyectil import Proyectil, abanico, circulo, cargar_frames
@@ -25,50 +27,62 @@ class Dark_Witch_Eleine(Enemy):
         contacto. Solo puede haber uno a la vez.
 
     Al ~33% se enfurece y toma una forma monstruosa, sumando:
-      - Justo después de las bolas de fuego o las esferas se teletransporta
-        en diagonal por encima de Lilie y ataca con las enredaderas del vestido.
       - Se teletransporta a lo alto de la sala y suelta dos oleadas de esferas
         en todas direcciones.
+
+    La wiki le da además un cuarto ataque en esta forma: teletransportarse en
+    diagonal sobre Lilie y barrer con las enredaderas del vestido. No hay
+    animación de enredaderas, así que se sacó en vez de dejarla como unos
+    círculos sueltos que no se entienden.
 
     La wiki la describe además como muy susceptible al daño por aturdimiento;
     eso queda pendiente porque todavía no hay sistema de aturdimiento.
     """
 
     VIDEO_MUERTE = "eleine"
+    # Tema de fondo de cada fase (de Sonidos.MUSICA).
+    MUSICA_FASE = {1: "eleine_fase1", 2: "eleine_fase2", 3: "eleine_fase3"}
 
     # Cuánto antes del disparo suena la alerta. Eleine es de reacción rápida:
     # avisa medio segundo antes, mucho menos que el segundo y medio de Siegrid.
     AVISO_MS = 500
 
+    # Pausa entre un hechizo y el siguiente, por fase. Es el freno principal
+    # del ritmo: cuanto mas corta, mas seguido ataca. Se acorta en cada
+    # transformacion, asi la pelea se acelera a medida que avanza.
+    PAUSA_MS = {
+        1: (1500, 2400),
+        2: (1050, 1700),
+        3: (700, 1150),
+    }
+
+    # Multiplicador de los cooldowns por fase. La pausa sola no alcanzaria:
+    # sin esto, al acelerar se quedaria esperando a que se liberen los
+    # hechizos y el ritmo no subiria tanto como parece.
+    COOLDOWN_FASE = {1: 1.0, 2: 0.78, 3: 0.58}
+
     # ------------------------------------------------------------- hechizos
     CONO_FUEGO = Hechizo("cono_fuego", aviso=AVISO_MS, windup=260, recovery=520,
-                         cooldown=3200, damage=18, max_range=900)
+                         cooldown=4600, damage=18, max_range=900)
 
     ESFERA = Hechizo("esfera", aviso=AVISO_MS, windup=200, recovery=420,
-                     cooldown=2400, damage=22, max_range=1100)
+                     cooldown=3600, damage=22, max_range=1100)
 
     # Fase II: la misma esfera, pero sale dos veces seguidas.
     ESFERA_DOBLE = Hechizo("esfera_doble", aviso=AVISO_MS, windup=200, recovery=460,
-                           cooldown=2600, damage=22, descargas=2, intervalo=340,
+                           cooldown=3800, damage=22, descargas=2, intervalo=340,
                            max_range=1100)
 
     TORBELLINO = Hechizo("torbellino", aviso=AVISO_MS, windup=320, recovery=640,
-                         cooldown=7000, damage=30, max_range=900)
-
-    # Fase III: no se elige sola, se encadena a los otros ataques.
-    ENREDADERAS = Hechizo("enredaderas", aviso=AVISO_MS, windup=240, recovery=520,
-                          cooldown=0, damage=26, selectable=False)
+                         cooldown=9000, damage=30, max_range=900)
 
     LLUVIA_ESFERAS = Hechizo("lluvia_esferas", aviso=AVISO_MS, windup=380, recovery=720,
-                             cooldown=8000, damage=20, descargas=2, intervalo=520)
+                             cooldown=9000, damage=20, descargas=2, intervalo=520)
 
     PHASE1 = [CONO_FUEGO, ESFERA]
     PHASE2 = [CONO_FUEGO, ESFERA_DOBLE, TORBELLINO]
     PHASE3 = [CONO_FUEGO, ESFERA_DOBLE, TORBELLINO, LLUVIA_ESFERAS]
-    TODOS = {h.name: h for h in PHASE3 + [ESFERA, ENREDADERAS]}
-
-    # "Inmediatamente después" de fuego o esferas, en la fase III.
-    CHANCE_ENREDADERAS = 1.0
+    TODOS = {h.name: h for h in PHASE3 + [ESFERA]}
 
     SPRITE_FOLDER = "Enemy/Dark_Witch_Eleine"
     # Altura en pixeles que debe medir su cuerpo visible (Lilie mide ~85). De
@@ -77,11 +91,20 @@ class Dark_Witch_Eleine(Enemy):
     ALTO_CUERPO = 170
 
     ALTO_TORBELLINO = 230    # px de alto del embudo ya en pantalla
-    ALTURA_VUELO = 250       # px sobre el piso a los que flota
+    # Px sobre el piso a los que flota. No es libre: Lilie salta 194 px y sus
+    # habilidades se anclan a sus pies, asi que el mejor ataque en el aire
+    # llega a y=447. Con 250 Eleine no bajaba de y=418 y era literalmente
+    # inmatable; a 180 queda alcanzable saltando, que es como se pelea contra
+    # un jefe que nunca toca el suelo.
+    ALTURA_VUELO = 180
     AMPLITUD_FLOTE = 18      # cuánto sube y baja mientras espera
     DIST_PREFERIDA = 330     # distancia a la que trata de mantenerse
 
-    def __init__(self, x, y=None, width=110, height=160, max_health=420):
+    # Vida. Es la jefa mas larga del juego: tres fases y, a diferencia de Siegrid,
+    # no se cura al transformarse, asi que los 1800 se reparten enteros entre
+    # las tres (1800 -> 1188 -> 594). Siegrid pide 1140 de dano en total porque
+    # recupera la barra al mutar.
+    def __init__(self, x, y=None, width=110, height=160, max_health=1800):
         if y is None:
             y = con.GROUND_Y - self.ALTURA_VUELO - height
         super().__init__(x, y, width, height, max_health, color=(120, 40, 95))
@@ -108,8 +131,8 @@ class Dark_Witch_Eleine(Enemy):
         self.descargas_hechas = 0
         self.cooldowns = {}
         self.think_timer = 0
-        self._pendiente_enredaderas = False
 
+        self._combate_iniciado = False
         self.transicion_timer = 0
         self.transicion_duracion = 1200
         self.velocidad = 2.2
@@ -179,6 +202,7 @@ class Dark_Witch_Eleine(Enemy):
         super().take_damage(amount)
 
         if self.state == "dead":
+            Sonidos.parar_musica()
             self._terminar_hechizo(silencioso=True)
             self.proyectiles.clear()
             self.torbellino = None
@@ -195,6 +219,8 @@ class Dark_Witch_Eleine(Enemy):
         self.cooldowns.clear()
         self.transicion_timer = self.transicion_duracion
         self.invuln_timer = self.transicion_duracion
+        Sonidos.reproducir("cambio_eleine")
+        Sonidos.musica(self.MUSICA_FASE[fase], fundido_ms=400)
         if fase == 2:
             self.velocidad = 2.8
             self.color = (150, 45, 120)
@@ -217,7 +243,7 @@ class Dark_Witch_Eleine(Enemy):
         self.action_timer = 0
         self.fase_hechizo = "telegraph" if hechizo.telegraph else "windup"
         self.descargas_hechas = 0
-        self.cooldowns[hechizo.name] = hechizo.cooldown
+        self.cooldowns[hechizo.name] = hechizo.cooldown * self.COOLDOWN_FASE[self.phase]
         if hechizo.damage > 0 and hechizo.telegraph:
             self.avisar_ataque()
 
@@ -229,16 +255,7 @@ class Dark_Witch_Eleine(Enemy):
         if silencioso or anterior is None:
             return
 
-        # Encadenado de la fase III: tras fuego o esferas, salta y barre con
-        # las enredaderas.
-        if (self.phase == 3
-                and anterior.name in ("cono_fuego", "esfera", "esfera_doble")
-                and random.random() < self.CHANCE_ENREDADERAS):
-            self._pendiente_enredaderas = True
-            self._empezar(self.ENREDADERAS)
-            return
-
-        self.think_timer = random.randint(320, 700)
+        self.think_timer = random.randint(*self.PAUSA_MS[self.phase])
 
     # --------------------------------------------------------- lanzamientos
     def _lanzar(self, hechizo, target):
@@ -282,12 +299,6 @@ class Dark_Witch_Eleine(Enemy):
                                         nombre="torbellino")
             self.proyectiles.append(self.torbellino)
 
-        elif hechizo.name == "enredaderas":
-            self.proyectiles += abanico(x, y, tx, ty, cantidad=3, apertura=26,
-                                        rapidez=7.5, damage=hechizo.damage,
-                                        radius=16, color=(90, 150, 90),
-                                        lifetime=1400, nombre="enredadera")
-
         elif hechizo.name == "lluvia_esferas":
             # La segunda oleada va girada para no dejar los mismos huecos.
             desfase = 0.0 if self.descargas_hechas == 0 else math.pi / 12
@@ -297,19 +308,15 @@ class Dark_Witch_Eleine(Enemy):
                                         lifetime=5000, frames=self.frames_esfera,
                                         girar=180, nombre="lluvia")
 
-    def _teletransportar(self, target, arriba_del_todo=False):
-        if target is None:
-            return
-        if arriba_del_todo:
-            self.x = con.WIDTH // 2 - self.width // 2
-            self._base_y = 60
-        else:
-            # En diagonal por encima de Lilie, del lado del que venía.
-            lado = -1 if target.hitbox.centerx > self.hitbox.centerx else 1
-            self.x = target.hitbox.centerx + lado * 150 - self.width // 2
-            self._base_y = target.hitbox.top - 210
-        self.x = max(0, min(con.WIDTH - self.width, self.x))
-        self._base_y = max(20, self._base_y)
+    def _teletransportar_arriba(self, target=None):
+        """Se planta en lo alto de la sala, que es de donde suelta la lluvia.
+
+        Se ubica sobre Lilie y no en el centro del nivel: con la camara, el
+        nivel es mucho mas ancho que la pantalla y el centro podria quedar
+        fuera de la vista."""
+        centro = target.hitbox.centerx if target is not None else self.hitbox.centerx
+        self.x = Mundo.limitar_x(centro - self.width // 2, self.width)
+        self._base_y = 60
         self.y = self._base_y
 
     # --------------------------------------------------------------- update
@@ -318,6 +325,13 @@ class Dark_Witch_Eleine(Enemy):
             self.proyectiles.clear()
             self.torbellino = None
             return
+
+        if not self._combate_iniciado and target is not None:
+            # Mismo criterio que con Siegrid: sin disparador de arena, la
+            # pelea empieza cuando el jefe recibe por primera vez a quien
+            # enfrentar.
+            self._combate_iniciado = True
+            Sonidos.musica(self.MUSICA_FASE[self.phase])
 
         if self.invuln_timer > 0:
             self.invuln_timer -= dt
@@ -360,7 +374,7 @@ class Dark_Witch_Eleine(Enemy):
         if hechizo is not None:
             if hechizo.name == "lluvia_esferas":
                 # "Se teletransporta a lo alto de la sala" antes de la lluvia.
-                self._teletransportar(target, arriba_del_todo=True)
+                self._teletransportar_arriba(target)
             self._empezar(hechizo)
             return
 
@@ -370,7 +384,7 @@ class Dark_Witch_Eleine(Enemy):
             self.x += self.velocidad if hacia_derecha else -self.velocidad
         elif distancia < self.DIST_PREFERIDA - 60:
             self.x -= self.velocidad if hacia_derecha else -self.velocidad
-        self.x = max(0, min(con.WIDTH - self.width, self.x))
+        self.x = Mundo.limitar_x(self.x, self.width)
 
     def _update_hechizo(self, dt, target):
         h = self.hechizo
@@ -383,11 +397,6 @@ class Dark_Witch_Eleine(Enemy):
 
         if t < h.windup:
             self.fase_hechizo = "windup"
-            # El teletransporte de las enredaderas ocurre en su windup: aparece
-            # encima de Lilie justo antes de barrer.
-            if self._pendiente_enredaderas:
-                self._pendiente_enredaderas = False
-                self._teletransportar(target)
             return
 
         # Primera descarga al terminar el windup; las siguientes cada

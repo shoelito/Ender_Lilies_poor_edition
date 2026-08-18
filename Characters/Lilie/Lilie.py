@@ -2,6 +2,7 @@ import pygame
 import re
 import json
 import Constantes as con
+import Mundo
 import Sonidos
 from Characters.CharacterClass import Character
 from Characters.Lilie.Ability.Umbral_Knight import Umbral_Knight
@@ -166,7 +167,12 @@ class Lilie(Character):
 
     # ---------------------------------------------------------------- update
 
-    def update(self, dt):
+    def update(self, dt, colisiones=None):
+        if colisiones is None:
+            colisiones = []
+        
+        prev_x = self.x
+        
         self.invuln_timer = max(0, self.invuln_timer - dt)
         self.hurt_timer = max(0, self.hurt_timer - dt)
         self.dash_grace_timer = max(0, self.dash_grace_timer - dt)
@@ -178,7 +184,7 @@ class Lilie(Character):
 
         is_moving = self.moving["left"] or self.moving["right"] or self.moving["jump"] or self.moving["dashLeft"] or self.moving["dashRight"]
 
-        is_in_air = self.y + self.height < con.GROUND_Y
+        is_in_air = getattr(self, 'on_ground', False) == False
         new_state = "pray" if self.moving["pray"] else "dash" if self.moving["dash"] else "jump" if (self.moving["jump"] or is_in_air) else "walk" if is_moving else "idle"
         if new_state != self.state:
             self.state = new_state
@@ -254,15 +260,58 @@ class Lilie(Character):
                 if self.frame_index == (len(self.animations["dash"]) // 2) - 1:
                     self.moving["dash"] = False
                     
+        # --- COLISIONES X ---
+        # Usamos un rectángulo lógico fijo para el mapa, para que la animación no cause vibraciones.
+        # Quitamos márgenes horizontales (ej. 30px) para que no choque con paredes estando lejos.
+        logical_rect = pygame.Rect(self.x + 30, self.y + 10, self.width - 60, self.height - 10)
+        
+        for rect in colisiones:
+            if logical_rect.colliderect(rect):
+                if self.x > prev_x: # Se movió a la derecha
+                    self.x -= (logical_rect.right - rect.left)
+                    logical_rect.x -= (logical_rect.right - rect.left)
+                elif self.x < prev_x: # Se movió a la izquierda
+                    self.x += (rect.right - logical_rect.left)
+                    logical_rect.x += (rect.right - logical_rect.left)
+
+        # --- MOVIMIENTO Y ---
         self.vel_y += self.gravity
-            
         self.y += self.vel_y
+        logical_rect.y += self.vel_y
 
-        if self.y + self.height >= con.GROUND_Y:
-            self.y = con.GROUND_Y - self.height
+        # --- COLISIONES Y ---
+        toco_suelo = False
+        for rect in colisiones:
+            if logical_rect.colliderect(rect):
+                if self.vel_y > 0: # Cayendo, choca con piso
+                    self.y -= (logical_rect.bottom - rect.top)
+                    logical_rect.y -= (logical_rect.bottom - rect.top)
+                    self.vel_y = 0
+                    toco_suelo = True
+                elif self.vel_y < 0: # Subiendo, choca con techo
+                    self.y += (rect.bottom - logical_rect.top)
+                    logical_rect.y += (rect.bottom - logical_rect.top)
+                    self.vel_y = 0
+
+        # Evitar caer infinitamente si sale del mapa
+        if self.y > 5000:
+            self.y = 5000
             self.vel_y = 0
-            self.jumpLimit = 2 if self.saved["double_jump"] else 1
+            toco_suelo = True
 
+        if toco_suelo:
+            self.jumpLimit = 2 if self.saved["double_jump"] else 1
+            
+        self.on_ground = toco_suelo
+
+        # No se sale del nivel por los costados. Antes el mundo medía una
+        # pantalla y no hacía falta; ahora el ancho lo define el mapa.
+        self.x = Mundo.limitar_x(self.x, self.width)
+
+        # El hitbox se recalcula al final de todo: si no, se queda donde
+        # apareció y arrastra a todo lo que lo consulta (la cámara la seguiría
+        # sin moverse, y los golpes enemigos se resolverían contra el punto de
+        # aparición en vez de contra donde está).
         self._sync_hitbox()
 
     def draw(self, screen, enemies=()):

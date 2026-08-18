@@ -61,7 +61,7 @@ def handle_inputs(output=None, in_pause = False):
             elif event.button == 0:
                 action = "jump" if not in_pause else "select"
             elif event.button == 1:
-                action = "back"
+                action = "attack3" if not in_pause else "back"
             elif event.button == 4:
                 action = "pause" if not in_pause else "back"
             elif event.button == 6:
@@ -74,8 +74,6 @@ def handle_inputs(output=None, in_pause = False):
                 action = "attack1"
             elif event.button == 3:
                 action = "attack2"
-            elif event.button == 1:
-                action = "attack3"
             elif event.button == 8:
                 action = "changeSlot"
                 
@@ -131,12 +129,15 @@ def handle_inputs(output=None, in_pause = False):
         if is_up_event and action and action in output:
             output.remove(action)
 
-        # DEBUGS 
-        '''if event.type == pygame.JOYBUTTONDOWN:
+        # DEBUGS
+        if event.type == pygame.JOYBUTTONDOWN:
             print(f"Botón presionado: {event.button}")
             
-        if event.type == pygame.JOYAXISMOTION and event.axis == 0:
+        if event.type == pygame.JOYAXISMOTION:
             if abs(event.value) > con.AXIS_DEADZONE:
-                print(f"Joystick Axis {event.axis} : {event.value:6.3f}")'''
+                print(f"Joystick Axis {event.axis} : {event.value:6.3f}")
+
+        if event.type == pygame.JOYHATMOTION:
+            print(f"Hat {event.hat} : {event.value}")
     
     return output

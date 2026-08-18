@@ -3,6 +3,7 @@ import os
 import re
 import pygame
 import Constantes as con
+import Mundo
 import Sonidos
 
 class Ability(ABC):
@@ -215,7 +216,7 @@ class Ability(ABC):
         bound_x = frame_width - bounds.x - bounds.width if not facing_right else bounds.x
         self.hitbox = pygame.Rect(round(self.projectile_x + bound_x), round(self.projectile_y + bounds.y), bounds.width, bounds.height)
 
-        hit_wall = self.projectile_x < -frame_width or self.projectile_x > con.WIDTH
+        hit_wall = self.projectile_x < -frame_width or self.projectile_x > Mundo.ancho
         hit_ground = self.projectile_gravity > 0 and self.projectile_y + frame_height >= con.GROUND_Y
         hit_enemy = self._hit_enemies(enemies)
 

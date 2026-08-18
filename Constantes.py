@@ -3,7 +3,7 @@ HEIGHT = 720
 GROUND_OFFSET = 50
 GROUND_Y = HEIGHT - GROUND_OFFSET
 ASSETS_PATH = "Assets/"
-MUSIC_PATH = "Media/Music/"
+MUSIC_PATH = "Assets/Music/"
 SFX_PATH = "Assets/SFX/"
 SFX_VOLUME = 0.7 # volumen efectos (0.0 - 1.0)
 CLOCK_FPS = 60
@@ -28,3 +28,10 @@ HUD_MARGIN = 24
 VIDEO_PATH = "Assets/Videos/"
 VIDEO_SKIP_MS = 1200
 VIDEO_FUNDIDO_MS = 5000
+
+# Muerte del jugador
+MUERTE_ESPERA_MS = 3000   # espera antes de reiniciar el juego desde cero
+
+# Cámara
+CAMARA_ZONA_MUERTA = 300 # Pixeles desde el borde antes de que la cámara empiece a seguir
+CAMARA_SUAVIZADO = 0.1   # Interpolación (0.1 es un seguimiento suave)

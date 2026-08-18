@@ -37,6 +37,8 @@ class Guardian_Siegrid(Enemy):
 
     SPRITE_FOLDER = "Enemy/Guardian_Siegrid"
     VIDEO_MUERTE = "siegrid"
+    # Tema de fondo de cada fase (de Sonidos.MUSICA).
+    MUSICA_FASE = {1: "siegrid_fase1", 2: "siegrid_fase2"}
 
     # -------------------------------------------------------- fase I: mangual
     FLAIL_SWING = Move("flail_swing", "flail_swing",
@@ -156,6 +158,7 @@ class Guardian_Siegrid(Enemy):
         self.turn_timer = 0
 
         self.vel_y = 0
+        self._combate_iniciado = False
 
     # ------------------------------------------------------------------ arte
 
@@ -262,6 +265,7 @@ class Guardian_Siegrid(Enemy):
 
         if self.state == "dead":
             Sonidos.reproducir("siegrid_muerte")
+            Sonidos.parar_musica()
             self.current_move = None
             self.attack_hitbox = pygame.Rect(0, 0, 0, 0)
             self.frame_index = 0
@@ -278,6 +282,8 @@ class Guardian_Siegrid(Enemy):
         self.phase = 2
         self.health = self.max_health
         Sonidos.reproducir("siegrid_rugido")
+        # El tema de la fase II entra de golpe, junto con el rugido.
+        Sonidos.musica(self.MUSICA_FASE[2], fundido_ms=400)
         if self.sprite_sets[2][0]:
             self.animations, self.animation_bounds, self.animation_cores = self.sprite_sets[2]
 
@@ -451,6 +457,12 @@ class Guardian_Siegrid(Enemy):
                     self.frame_index += 1
             self.attack_hitbox = pygame.Rect(0, 0, 0, 0)
             return
+
+        if not self._combate_iniciado and target is not None:
+            # No hay disparador de arena todavia: el combate se da por
+            # empezado cuando el jefe recibe por primera vez a quien pelear.
+            self._combate_iniciado = True
+            Sonidos.musica(self.MUSICA_FASE[self.phase])
 
         if self.invuln_timer > 0:
             self.invuln_timer -= dt

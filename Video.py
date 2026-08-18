@@ -108,7 +108,8 @@ def reproducir(pantalla, nombre):
                     _restaurar_juego(audio_activo)
                     pygame.quit()
                     raise SystemExit
-                if evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+                if (evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE) or \
+                   (evento.type == pygame.JOYBUTTONDOWN and evento.button == 6):
                     if ahora - ultimo_esc <= con.VIDEO_SKIP_MS:
                         saltar = True
                     else:

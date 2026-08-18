@@ -1,3 +1,4 @@
+import os
 import pygame
 import sys
 import Constantes as con
@@ -8,9 +9,19 @@ from Characters.Lilie.Lilie import Lilie
 from Characters.Enemy.Guardian_Siegrid import Guardian_Siegrid
 from Characters.Enemy.Dark_Witch_Eleine import Dark_Witch_Eleine
 import json
+import Mundo
+from Camara import Camara
+from Mapa import Mapa
 from movements import handle_inputs
 
 pygame.init()
+pygame.joystick.init()
+if pygame.joystick.get_count() > 0:
+    joystick = pygame.joystick.Joystick(0)
+    joystick.init()
+    print(f"Mando detectado: {joystick.get_name()}")
+else:
+    print("No se detectó ningún mando. Usando teclado.")
 pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
 pygame.mixer.set_num_channels(32)
 Sonidos.precargar()
@@ -35,13 +46,17 @@ reloj.tick(con.CLOCK_FPS)
 
 lili = Lilie(data["player"]["x"], data["player"]["y"], 120, 120)
 
-# --- INTEGRACIÓN DEL MAPA ---
-# 1. Cargar la imagen original del Nivel 3
-imagen_mapa_original = pygame.image.load("Assets/Lilie/map/tileset_mapa/Fondos/Nivel 3.jpeg").convert()
+# --- INTEGRACIÓN DEL MAPA Y CÁMARA ---
+# 1. Cargar el mapa Tiled (.tmx)
+mapa = Mapa("Assets/Lilie/map/tileset_mapa/Mapas/mapa_nivel_3.tmx")
 
-# 2. Escalarla suavemente (smoothscale) para que llene toda la pantalla (con.WIDTH x con.HEIGHT)
-imagen_mapa = pygame.transform.smoothscale(imagen_mapa_original, (con.WIDTH, con.HEIGHT))
-# --- FIN INTEGRACIÓN MAPA ---
+# 2. Inicializar la cámara con las dimensiones reales del mapa
+# Los proyectiles y los jefes usaban con.WIDTH como borde del mundo; ahora el
+# nivel lo define el .tmx, asi que hay que avisarles cuanto mide.
+Mundo.definir(mapa.width, mapa.height)
+
+camara = Camara(mapa.width, mapa.height)
+# --- FIN INTEGRACIÓN MAPA Y CÁMARA ---
 
 # Jefes de prueba
 jefes = [
@@ -55,6 +70,18 @@ video_pendiente = None
 fundido_hasta = 0
 vistos = set()
 
+# Muerte de Lilie: suena su caida, se oscurece la pantalla y el juego arranca
+# de cero. Se relanza el proceso entero en vez de rearmar el estado a mano
+# porque la partida se monta a nivel de modulo (menu, mapa, jefes, videos):
+# reiniciar el proceso es lo unico que garantiza dejarlo todo como al abrirlo.
+muerte_hasta = None
+
+
+def reiniciar_juego():
+    pygame.mixer.music.stop()
+    pygame.quit()
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
 while True:
     dt = reloj.tick(con.CLOCK_FPS)
 
@@ -64,12 +91,17 @@ while True:
         pygame.quit()
         sys.exit()
 
-    # Congelado cuando reproduce videos
-    congelado = video_pendiente is not None
+    if muerte_hasta is None and lili.is_dead:
+        Sonidos.reproducir("player_muerte")
+        Sonidos.parar_musica()
+        muerte_hasta = pygame.time.get_ticks() + con.MUERTE_ESPERA_MS
+
+    # Congelado cuando reproduce videos o mientras se muere Lilie
+    congelado = video_pendiente is not None or muerte_hasta is not None
 
     if not congelado:
         lili.movements(acciones_activas, screen)
-        lili.update(dt)
+        lili.update(dt, mapa.colisiones)
 
     jefes_vivos = []
     for jefe in jefes:
@@ -82,24 +114,39 @@ while True:
             video_pendiente = jefe.VIDEO_MUERTE
             fundido_hasta = pygame.time.get_ticks() + con.VIDEO_FUNDIDO_MS
 
-    # Renderizado o Dibujo en pantalla
-    screen.fill((20, 20, 30))
+    # Renderizado o Dibujo en el mundo de la cámara
+    camara.limpiar((20, 20, 30))
 
     # --- DIBUJO DEL MAPA ---
-    # Dibuja la versión escalada y suavizada del mapa como fondo en la esquina (0,0)
-    screen.blit(imagen_mapa, (0, 0))
+    # Dibuja todas las capas del mapa sobre el mundo de la cámara
+    mapa.draw(camara.mundo)
     # --- FIN DIBUJO MAPA ---
 
-    # 2. Dibujar a los jefes
+    # 2. Dibujar a los jefes en el mundo
     for jefe in jefes:
-        jefe.draw(screen)
+        jefe.draw(camara.mundo)
 
-    # 3. Dibujar a Lilie encima del mapa
+    # 3. Dibujar a Lilie encima del mapa en el mundo
     if hasattr(lili, 'draw'):
-        lili.draw(screen, jefes_vivos)
+        lili.draw(camara.mundo, jefes_vivos)
 
-    # 4. Dibujar el HUD
+    # 4. Actualizar la cámara para que siga a Lilie (inmediato=False para suavizado)
+    camara.seguir(lili.hitbox)
+
+    # 5. Volcar lo que ve la cámara a la pantalla real
+    camara.volcar(screen)
+
+    # 6. Dibujar el HUD directamente sobre la pantalla (queda fijo)
     lili.draw_hud(screen)
+
+    if muerte_hasta is not None:
+        restante = muerte_hasta - pygame.time.get_ticks()
+        avance = 1 - max(0, restante) / con.MUERTE_ESPERA_MS
+        Video.superponer_oscurecido(screen, avance)
+        pygame.display.flip()
+        if restante <= 0:
+            reiniciar_juego()
+        continue
 
     if video_pendiente is not None:
         restante = fundido_hasta - pygame.time.get_ticks()

@@ -1,5 +1,6 @@
 import pygame
 import Constantes as con
+import Mundo
 from Characters.Ability.Ability import Ability
 import json
 
@@ -136,7 +137,7 @@ class Dark_Witch_Eleine(Ability):
 
         # "Choca con una pared": todavía no hay geometría de nivel, así que
         # los bordes de pantalla hacen de pared por ahora.
-        hit_wall = self._orb_x < -frame_width or self._orb_x > con.WIDTH
+        hit_wall = self._orb_x < -frame_width or self._orb_x > Mundo.ancho
         hit_enemy = self._hit_enemies(enemies)
 
         if hit_wall or hit_enemy:

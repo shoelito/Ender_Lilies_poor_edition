@@ -4,6 +4,7 @@ import re
 
 import pygame
 import Constantes as con
+import Mundo
 
 
 class Proyectil:
@@ -120,8 +121,8 @@ class Proyectil:
             return False
 
         margen = self.radius * 4
-        if (self.x < -margen or self.x > con.WIDTH + margen
-                or self.y < -margen or self.y > con.HEIGHT + margen):
+        if (self.x < -margen or self.x > Mundo.ancho + margen
+                or self.y < -margen or self.y > Mundo.alto + margen):
             self.vivo = False
             return False
 

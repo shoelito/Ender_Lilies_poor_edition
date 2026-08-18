@@ -155,6 +155,41 @@ class Menu:
                     elif self.opcion_seleccionada == 2:  # "Salir"
                         return "salir"
 
+            # --- MANDO: Botones ---
+            elif event.type == pygame.JOYBUTTONDOWN:
+                opcion_anterior = self.opcion_seleccionada
+                if event.button == 11:  # D-pad Arriba
+                    self.opcion_seleccionada = (self.opcion_seleccionada - 1) % len(self.opciones_menu)
+                elif event.button == 12:  # D-pad Abajo
+                    self.opcion_seleccionada = (self.opcion_seleccionada + 1) % len(self.opciones_menu)
+                elif event.button == 0:  # X / Cruz → Confirmar
+                    if self.opcion_seleccionada == 0:
+                        if self.sonido_click:
+                            self.sonido_click.play()
+                            inicio_espera = pygame.time.get_ticks()
+                            while pygame.mixer.get_busy() and pygame.time.get_ticks() - inicio_espera < 150:
+                                pygame.time.wait(10)
+                        return "empezar"
+                    elif self.opcion_seleccionada == 2:
+                        return "salir"
+                
+                if self.opcion_seleccionada != opcion_anterior:
+                    if self.sonido_hover and self.canal_hover:
+                        self.canal_hover.play(self.sonido_hover)
+                    self.ultimo_hover = self.opcion_seleccionada
+
+            # --- MANDO: Joystick izquierdo (eje Y) ---
+            elif event.type == pygame.JOYAXISMOTION and event.axis == 1:
+                opcion_anterior = self.opcion_seleccionada
+                if event.value < -0.5:
+                    self.opcion_seleccionada = (self.opcion_seleccionada - 1) % len(self.opciones_menu)
+                elif event.value > 0.5:
+                    self.opcion_seleccionada = (self.opcion_seleccionada + 1) % len(self.opciones_menu)
+                if self.opcion_seleccionada != opcion_anterior:
+                    if self.sonido_hover and self.canal_hover:
+                        self.canal_hover.play(self.sonido_hover)
+                    self.ultimo_hover = self.opcion_seleccionada
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     pos_y_base = con.HEIGHT // 2 + 100
@@ -238,6 +273,25 @@ class Menu:
                 # Se agregó pygame.K_b para volver al presionar la letra B
                 elif event.key == pygame.K_b or event.key == pygame.K_ESCAPE or event.key == pygame.K_x:
                     return "volver"
+
+            # --- MANDO: Botones ---
+            elif event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 11:  # D-pad Arriba
+                    self.slot_seleccionado = (self.slot_seleccionado - 1) % 3
+                elif event.button == 12:  # D-pad Abajo
+                    self.slot_seleccionado = (self.slot_seleccionado + 1) % 3
+                elif event.button == 0:  # X / Cruz → Confirmar
+                    return self.slot_seleccionado
+                elif event.button == 1:  # O / Círculo → Volver
+                    return "volver"
+
+            # --- MANDO: Joystick izquierdo (eje Y) ---
+            elif event.type == pygame.JOYAXISMOTION and event.axis == 1:
+                if event.value < -0.5:
+                    self.slot_seleccionado = (self.slot_seleccionado - 1) % 3
+                elif event.value > 0.5:
+                    self.slot_seleccionado = (self.slot_seleccionado + 1) % 3
+
         return None
 
     def _dibujar_seleccion_partida(self):
