@@ -8,8 +8,7 @@ from Characters.Lilie.Lilie import Lilie
 from Characters.Enemy.Guardian_Siegrid import Guardian_Siegrid
 from Characters.Enemy.Dark_Witch_Eleine import Dark_Witch_Eleine
 import json
-from Camara import Camara
-from Mapa import Mapa
+from Niveles import Niveles
 from movements import handle_inputs
 
 pygame.init()
@@ -36,21 +35,17 @@ Video.reproducir(screen, "partida")
 reloj.tick(con.CLOCK_FPS)
 
 # --- INTEGRACIÓN DEL MAPA Y CÁMARA ---
-# 1. Cargar el mapa Tiled (.tmx). Mapa lo escala para que llene la ventana:
-#    mapa.width/height ya vienen en píxeles de pantalla.
-mapa = Mapa(con.MAPA_INICIAL)
+# `Niveles` es dueño del mapa y de la cámara: los dos cambian juntos al pasar
+# de un nivel al siguiente, así que se los usa siempre como niveles.mapa y
+# niveles.camara en vez de guardarlos en variables que quedarían viejas.
+niveles = Niveles()
 
-# 2. La cámara se dimensiona con el mundo ya escalado.
-camara = Camara(mapa.width, mapa.height)
-
-# 3. Lilie arranca parada en el spawn del mapa. Las coordenadas del save son de
-#    cuando el mundo medía una pantalla, así que no sirven para ubicarla dentro
-#    de un nivel de Tiled; el punto lo manda el .tmx (objeto "spawn" si lo hay,
-#    si no la primera plataforma pisable del nivel).
+# Lilie arranca parada en el spawn del primer nivel. Las coordenadas del save
+# son de cuando el mundo medía una pantalla, así que no sirven para ubicarla
+# dentro de un nivel de Tiled; el punto lo manda el .tmx (objeto "spawn" si lo
+# hay, si no la primera plataforma pisable).
 lili = Lilie(data["player"]["x"], data["player"]["y"], 120, 120)
-mapa.colocar(lili)
-lili.update(0, mapa.colisiones)             # la asienta sobre el suelo
-camara.seguir(lili.hitbox, inmediato=True)  # arranca ya encuadrada, sin barrido
+niveles.cargar(0, lili)
 # --- FIN INTEGRACIÓN MAPA Y CÁMARA ---
 
 # Jefes de prueba
@@ -79,13 +74,19 @@ while True:
 
     if not congelado:
         lili.movements(acciones_activas, screen)
-        lili.update(dt, mapa.colisiones)
-        mapa.limitar(lili)      # no se sale del nivel por los costados
+        lili.update(dt, niveles.mapa.colisiones)
+
+        # Cambio de nivel: al llegar a un costado se pasa al nivel que sigue en
+        # con.ORDEN_NIVELES, entrando por el borde contrario. En las puntas de
+        # la cadena no hay a dónde ir, así que sólo topa contra el borde.
+        lado = niveles.mapa.borde_alcanzado(lili)
+        if lado is None or not niveles.cambiar(lili, lado, screen):
+            niveles.mapa.limitar(lili)
 
         # Red de seguridad: si se cae por un agujero vuelve al spawn en vez de
         # seguir cayendo para siempre fuera del mundo.
-        if mapa.se_cayo(lili):
-            mapa.colocar(lili)
+        if niveles.mapa.se_cayo(lili):
+            niveles.mapa.colocar(lili)
 
     jefes_vivos = []
     for jefe in jefes:
@@ -98,7 +99,11 @@ while True:
             video_pendiente = jefe.VIDEO_MUERTE
             fundido_hasta = pygame.time.get_ticks() + con.VIDEO_FUNDIDO_MS
 
-    # Renderizado o Dibujo en el mundo de la cámara
+    # Renderizado o Dibujo en el mundo de la cámara. `mapa` y `camara` salen de
+    # `niveles` porque los dos cambian al pasar de nivel.
+    mapa = niveles.mapa
+    camara = niveles.camara
+
     camara.limpiar((20, 20, 30))
 
     # --- DIBUJO DEL MAPA ---

@@ -40,6 +40,14 @@ _NOMBRES_COLISION = ("colision", "colisiones", "solido", "solidos", "wall")
 # Nombres de objeto que marcan dónde aparece Lilie al entrar al nivel.
 _NOMBRES_SPAWN = ("spawn", "inicio", "start", "player", "lilie")
 
+# Marcadores en general: son puntos de referencia, no paredes, así que no
+# entran en las colisiones aunque estén dibujados en la misma capa.
+_NOMBRES_MARCADOR = _NOMBRES_SPAWN + ("entrada", "salida")
+
+# Ancho del personaje en pantalla. Se usa para no dejarlo parado en un borde
+# donde no entra y para separarlo del filo al cambiar de nivel.
+ANCHO_PERSONAJE = 120
+
 
 class Mapa:
     def __init__(self, filename, escala=None, suavizar=None):
@@ -142,7 +150,7 @@ class Mapa:
             for obj in capa:
                 if getattr(obj, "visible", True) is False:
                     continue
-                if any(n in (obj.name or "").lower() for n in _NOMBRES_SPAWN):
+                if any(n in (obj.name or "").lower() for n in _NOMBRES_MARCADOR):
                     continue  # los marcadores no son pared
 
                 x, y, w, h = obj.x, obj.y, obj.width, obj.height
@@ -167,7 +175,30 @@ class Mapa:
 
                 rects.append(pygame.Rect(izq, arr, der - izq, aba - arr))
 
-        return self._absorber_contenidos(rects)
+        return self._abrir_bordes(self._absorber_contenidos(rects))
+
+    def _abrir_bordes(self, rects):
+        """Saca las paredes que sellan los costados del nivel.
+
+        Cada captura del collage vino con su marco, así que el panel del
+        extremo izquierdo y el del derecho tienen una pared vertical pegada al
+        filo del mundo. Mientras cada .tmx era un nivel suelto no molestaba; al
+        encadenarlos esa pared es la puerta cerrada entre un nivel y el
+        siguiente, y Lilie se quedaba golpeándola a 270px de la salida.
+
+        Se sacan sólo las verticales (más altas que anchas) que caen enteras
+        dentro del margen de salida: los pisos y las plataformas de las puntas
+        quedan intactos, así que no se abre ningún pozo. En los extremos de la
+        cadena, donde no hay nivel al que pasar, `limitar` sigue frenándola.
+        """
+        margen = getattr(con, "NIVEL_MARGEN_SALIDA", 200)
+
+        def es_tapon(r):
+            if r.height <= r.width:
+                return False        # piso o plataforma: no se toca
+            return r.right <= margen or r.left >= self.width - margen
+
+        return [r for r in rects if not es_tapon(r)]
 
     @staticmethod
     def _absorber_contenidos(rects):
@@ -185,6 +216,36 @@ class Mapa:
                 salida.append(r)
         return salida
 
+    def _objeto_marcador(self, nombres):
+        """Busca en las capas de objetos un marcador con alguno de esos
+        nombres y devuelve su posición ya escalada. None si no está."""
+        for capa in self.tmxdata.layers:
+            if not hasattr(capa, "__iter__") or hasattr(capa, "data"):
+                continue
+            for obj in capa:
+                nombre = (obj.name or "").lower()
+                tipo = (getattr(obj, "type", "") or "").lower()
+                if any(n in nombre or n == tipo for n in nombres):
+                    return (obj.x * self.escala, obj.y * self.escala)
+        return None
+
+    def _candidatos_suelo(self):
+        """Plataformas donde tiene sentido dejar parado a un personaje.
+
+        Se les piden tres cosas:
+          - que estén en la mitad de abajo del nivel (arriba son techos),
+          - que sean más anchas que Lilie, o no hay dónde pararse,
+          - que tengan nivel dibujado encima.
+        Lo último no es un capricho: estos mapas son un collage de capturas
+        sobre fondo blanco, y en `mapa_zona_1` los objetos de más a la
+        izquierda son paredes de borde plantadas en el vacío. Sin mirar el
+        arte, Lilie aparecía parada en medio de una pantalla en blanco.
+        """
+        suelos = [r for r in self.colisiones if r.top > self.height * 0.4]
+        anchos = [r for r in suelos if r.width >= ANCHO_PERSONAJE]
+        con_arte = [r for r in anchos if self._hay_nivel_encima(r)]
+        return con_arte or anchos or suelos or self.colisiones
+
     def _buscar_spawn(self):
         """Punto donde aparece Lilie, en coordenadas del mundo ya escaladas.
 
@@ -193,40 +254,50 @@ class Mapa:
         requiere tocar código. Si el mapa no lo trae, deduce un lugar seguro:
         parado sobre la plataforma jugable que esté más a la izquierda.
         """
-        for capa in self.tmxdata.layers:
-            if not hasattr(capa, "__iter__") or hasattr(capa, "data"):
-                continue
-            for obj in capa:
-                nombre = (obj.name or "").lower()
-                tipo = (getattr(obj, "type", "") or "").lower()
-                if any(n in nombre or n == tipo for n in _NOMBRES_SPAWN):
-                    return (obj.x * self.escala, obj.y * self.escala)
+        marcador = self._objeto_marcador(_NOMBRES_SPAWN)
+        if marcador:
+            return marcador
 
         if not self.colisiones:
             return (self.width * 0.1, self.height * 0.25)
 
-        # Sin marcador hay que deducirlo, y se le piden tres cosas a la
-        # plataforma elegida:
-        #   - que esté en la mitad de abajo del nivel (arriba son techos),
-        #   - que sea más ancha que Lilie, o no hay dónde pararse,
-        #   - que tenga nivel dibujado encima.
-        # Lo último no es un capricho: estos mapas son un collage de capturas
-        # sobre fondo blanco, y en `mapa_zona_1` los objetos de más a la
-        # izquierda son paredes de borde plantadas en el vacío. Sin mirar el
-        # arte, Lilie aparecía parada en medio de una pantalla en blanco.
-        ANCHO_MINIMO = 120
-
-        suelos = [r for r in self.colisiones if r.top > self.height * 0.4]
-        anchos = [r for r in suelos if r.width >= ANCHO_MINIMO]
-        con_arte = [r for r in anchos if self._hay_nivel_encima(r)]
-        candidatos = con_arte or anchos or suelos or self.colisiones
-
+        candidatos = self._candidatos_suelo()
         piso = min(candidatos, key=lambda r: (r.left, r.top))
-        x = piso.centerx if piso.width < ANCHO_MINIMO * 2 else piso.left + ANCHO_MINIMO / 2
-        # Que el cuerpo entre entero en el nivel aunque la plataforma empiece
-        # justo en el borde.
-        x = min(max(x, ANCHO_MINIMO / 2), self.width - ANCHO_MINIMO / 2)
-        return (x, piso.top)
+        x = (piso.centerx if piso.width < ANCHO_PERSONAJE * 2
+             else piso.left + ANCHO_PERSONAJE / 2)
+        return (self._x_dentro(x), piso.top)
+
+    def punto_entrada(self, lado):
+        """Dónde aparece alguien que entra al nivel por un costado.
+
+        Al pasar del nivel anterior se entra por la izquierda y al volver del
+        siguiente por la derecha, así que el personaje tiene que aparecer
+        pegado a ese borde y no en el spawn del nivel: si no, volver sobre tus
+        pasos te teletransportaría al principio de la zona.
+
+        Se puede fijar a mano poniendo en Tiled un objeto llamado
+        "entrada_izquierda" o "entrada_derecha"; si no está, se toma la
+        plataforma pisable más cercana a ese borde.
+        """
+        marcador = self._objeto_marcador((f"entrada_{lado}",))
+        if marcador:
+            return marcador
+        if not self.colisiones:
+            return self.spawn
+
+        candidatos = self._candidatos_suelo()
+        if lado == "izquierda":
+            piso = min(candidatos, key=lambda r: (r.left, r.top))
+            x = piso.left + ANCHO_PERSONAJE / 2
+        else:
+            piso = max(candidatos, key=lambda r: (r.right, -r.top))
+            x = piso.right - ANCHO_PERSONAJE / 2
+        return (self._x_dentro(x), piso.top)
+
+    def _x_dentro(self, x):
+        """Que el cuerpo entre entero en el nivel aunque la plataforma
+        arranque justo sobre el borde."""
+        return min(max(x, ANCHO_PERSONAJE / 2), self.width - ANCHO_PERSONAJE / 2)
 
     def _hay_nivel_encima(self, rect, alto=150, umbral=200):
         """True si arriba de `rect` hay dibujo y no fondo vacío.
@@ -247,22 +318,38 @@ class Mapa:
                     return True
         return False
 
-    def colocar(self, personaje):
-        """Deja al personaje de pie sobre el spawn del nivel.
+    def colocar(self, personaje, lado=None):
+        """Deja al personaje de pie en el nivel.
 
-        `spawn` marca dónde van los pies, así que hay que subir al personaje su
-        propia altura y centrarlo sobre el punto."""
-        x, y = self.spawn
+        Sin `lado` va al spawn del mapa (empezar la partida, reaparecer tras
+        caerse). Con "izquierda" o "derecha" entra por ese costado, que es lo
+        que hace falta al encadenar niveles.
+
+        El punto marca dónde van los pies, así que hay que subir al personaje
+        su propia altura y centrarlo sobre él."""
+        x, y = self.spawn if lado is None else self.punto_entrada(lado)
         personaje.x = x - personaje.width / 2
         personaje.y = y - personaje.height
         personaje.vel_y = 0
         return personaje
 
+    def borde_alcanzado(self, personaje):
+        """"izquierda"/"derecha" si el personaje llegó al filo del nivel.
+
+        Es el disparador del cambio de nivel: se pregunta antes de `limitar`,
+        con la posición sin recortar, para saber si quiso salirse."""
+        if personaje.x + personaje.width * 0.75 >= self.width:
+            return "derecha"
+        if personaje.x + personaje.width * 0.25 <= 0:
+            return "izquierda"
+        return None
+
     def limitar(self, personaje):
         """Impide que el personaje camine fuera del nivel por los costados.
 
         Los .tmx no traen paredes en los extremos, así que sin esto Lilie sale
-        del mundo caminando y queda dibujándose sobre el vacío."""
+        del mundo caminando y queda dibujándose sobre el vacío. Se usa en las
+        puntas de la cadena, donde no hay nivel al que pasar."""
         personaje.x = max(-personaje.width * 0.25,
                           min(self.width - personaje.width * 0.75, personaje.x))
 

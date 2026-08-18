@@ -9,6 +9,9 @@ SFX_VOLUME = 0.7 # volumen efectos (0.0 - 1.0)
 CLOCK_FPS = 60
 SPEED = 5
 GRAVITY = 0.5
+# Píxeles que se le descuentan a Lilie por arriba al chocar con el mapa. Le dan
+# aire para pasar por un hueco que mide justo su alto; los pies no se tocan.
+HOLGURA_TECHO = 8
 AXIS_DEADZONE = 0.5
 SHOW_HITBOX = True
 MAX_IMPURITY = 140
@@ -37,7 +40,31 @@ CAMARA_SUAVIZADO = 0.1   # Interpolación (0.1 es un seguimiento suave)
 
 # Mapas (Tiled)
 MAPAS_PATH = "Assets/Lilie/map/tileset_mapa/Mapas/"
-MAPA_INICIAL = MAPAS_PATH + "mapa_zona_1.tmx"
+
+# Orden en el que se encadenan los niveles. Saliendo por la derecha se pasa al
+# siguiente de la lista y por la izquierda se vuelve al anterior; en las dos
+# puntas de la cadena no se sale, sólo se topa contra el borde.
+#
+# OJO: mapa_nivel_1.tmx y mapa_nivel_2.tmx son idénticos y los dos muestran
+# Nivel 2.jpeg. "Nivel 1.jpeg" tiene tileset (fondo_visual_1.1.tsx) pero
+# ningún .tmx lo usa, así que el segundo nivel se va a ver igual que el
+# tercero hasta que rehagas mapa_nivel_1.tmx en Tiled sobre ese tileset.
+ORDEN_NIVELES = [
+    MAPAS_PATH + "mapa_nivel_3.tmx",        # Nivel 3.jpeg
+    MAPAS_PATH + "mapa_nivel_1.tmx",        # deberia ser Nivel 1.jpeg
+    MAPAS_PATH + "mapa_nivel_2.tmx",        # Nivel 2.jpeg
+    MAPAS_PATH + "mapa_zona_2.tmx",         # zona 2.jpeg
+    MAPAS_PATH + "mapa_zona_1.tmx",         # Zona 1.jpeg
+    MAPAS_PATH + "mapa_zona_finalboss.tmx", # zona_1_final_boss.jpeg
+    MAPAS_PATH + "mapa_zona_3.tmx",         # zona 3_nivel2.jpeg
+]
+MAPA_INICIAL = ORDEN_NIVELES[0]
+# Duración del fundido a negro con el que se tapa la carga del nivel nuevo.
+NIVEL_TRANSICION_MS = 220
+# Franja de cada costado que hace de puerta al nivel vecino. Las paredes
+# verticales que caen enteras ahí adentro son el marco de la captura, no
+# geometría del nivel, y se descartan para poder salir caminando.
+NIVEL_MARGEN_SALIDA = 200
 # Cuántos píxeles de pantalla mide una unidad de Tiled.
 #
 # Los .tmx no son tilesets dibujados: son capturas del juego original pegadas

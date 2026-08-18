@@ -262,7 +262,14 @@ class Lilie(Character):
         # --- COLISIONES X ---
         # Usamos un rectángulo lógico fijo para el mapa, para que la animación no cause vibraciones.
         # Quitamos márgenes horizontales (ej. 30px) para que no choque con paredes estando lejos.
-        logical_rect = pygame.Rect(self.x + 30, self.y + 10, self.width - 60, self.height - 10)
+        # La holgura se le saca a la cabeza, nunca a los pies: el borde de abajo
+        # sigue siendo y+height porque es lo que apoya en el piso. Sin ella, un
+        # pasillo que mide justo lo mismo que ella es infranqueable (en
+        # mapa_zona_2 hay uno de 110px y el cuerpo mide 110), y a la larga la
+        # frenaba antes de llegar al nivel siguiente.
+        holgura = con.HOLGURA_TECHO
+        logical_rect = pygame.Rect(self.x + 30, self.y + 10 + holgura,
+                                   self.width - 60, self.height - 10 - holgura)
         
         for rect in colisiones:
             if logical_rect.colliderect(rect):
