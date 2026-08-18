@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.12.2" name="fondo_visual_2" tilewidth="32" tileheight="32" tilecount="200" columns="40">
- <image source="../Nivel 2.jpeg" width="1280" height="166"/>
+ <image source="../Fondos/Nivel 2.jpeg" width="1280" height="166"/>
 </tileset>

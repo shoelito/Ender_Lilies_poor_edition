@@ -8,6 +8,8 @@ from Characters.Lilie.Lilie import Lilie
 from Characters.Enemy.Guardian_Siegrid import Guardian_Siegrid
 from Characters.Enemy.Dark_Witch_Eleine import Dark_Witch_Eleine
 import json
+from Camara import Camara
+from Mapa import Mapa
 from movements import handle_inputs
 
 pygame.init()
@@ -33,20 +35,28 @@ with open(f"SavedCampaing/PreSaved{NumeroDePartida}.json", "r") as f:
 Video.reproducir(screen, "partida")
 reloj.tick(con.CLOCK_FPS)
 
+# --- INTEGRACIÓN DEL MAPA Y CÁMARA ---
+# 1. Cargar el mapa Tiled (.tmx). Mapa lo escala para que llene la ventana:
+#    mapa.width/height ya vienen en píxeles de pantalla.
+mapa = Mapa(con.MAPA_INICIAL)
+
+# 2. La cámara se dimensiona con el mundo ya escalado.
+camara = Camara(mapa.width, mapa.height)
+
+# 3. Lilie arranca parada en el spawn del mapa. Las coordenadas del save son de
+#    cuando el mundo medía una pantalla, así que no sirven para ubicarla dentro
+#    de un nivel de Tiled; el punto lo manda el .tmx (objeto "spawn" si lo hay,
+#    si no la primera plataforma pisable del nivel).
 lili = Lilie(data["player"]["x"], data["player"]["y"], 120, 120)
-
-# --- INTEGRACIÓN DEL MAPA ---
-# 1. Cargar la imagen original del Nivel 3
-imagen_mapa_original = pygame.image.load("Assets/Lilie/map/tileset_mapa/Fondos/Nivel 3.jpeg").convert()
-
-# 2. Escalarla suavemente (smoothscale) para que llene toda la pantalla (con.WIDTH x con.HEIGHT)
-imagen_mapa = pygame.transform.smoothscale(imagen_mapa_original, (con.WIDTH, con.HEIGHT))
-# --- FIN INTEGRACIÓN MAPA ---
+mapa.colocar(lili)
+lili.update(0, mapa.colisiones)             # la asienta sobre el suelo
+camara.seguir(lili.hitbox, inmediato=True)  # arranca ya encuadrada, sin barrido
+# --- FIN INTEGRACIÓN MAPA Y CÁMARA ---
 
 # Jefes de prueba
 jefes = [
     #Guardian_Siegrid(data["player"]["x"] + 300, con.GROUND_Y - 200),
-    Dark_Witch_Eleine(data["player"]["x"] + 600),
+    #Dark_Witch_Eleine(data["player"]["x"] + 600),
 ]
 
 acciones_activas = []
@@ -69,7 +79,13 @@ while True:
 
     if not congelado:
         lili.movements(acciones_activas, screen)
-        lili.update(dt)
+        lili.update(dt, mapa.colisiones)
+        mapa.limitar(lili)      # no se sale del nivel por los costados
+
+        # Red de seguridad: si se cae por un agujero vuelve al spawn en vez de
+        # seguir cayendo para siempre fuera del mundo.
+        if mapa.se_cayo(lili):
+            mapa.colocar(lili)
 
     jefes_vivos = []
     for jefe in jefes:
@@ -82,23 +98,32 @@ while True:
             video_pendiente = jefe.VIDEO_MUERTE
             fundido_hasta = pygame.time.get_ticks() + con.VIDEO_FUNDIDO_MS
 
-    # Renderizado o Dibujo en pantalla
-    screen.fill((20, 20, 30))
+    # Renderizado o Dibujo en el mundo de la cámara
+    camara.limpiar((20, 20, 30))
 
     # --- DIBUJO DEL MAPA ---
-    # Dibuja la versión escalada y suavizada del mapa como fondo en la esquina (0,0)
-    screen.blit(imagen_mapa, (0, 0))
+    # El nivel ya viene armado en una sola superficie; se vuelca nada más el
+    # pedazo que la cámara está mirando.
+    mapa.draw(camara.mundo, camara.vista)
+    if con.MAPA_DEBUG_COLISIONES:
+        mapa.draw_colisiones(camara.mundo, camara.vista)
     # --- FIN DIBUJO MAPA ---
 
-    # 2. Dibujar a los jefes
+    # 2. Dibujar a los jefes en el mundo
     for jefe in jefes:
-        jefe.draw(screen)
+        jefe.draw(camara.mundo)
 
-    # 3. Dibujar a Lilie encima del mapa
+    # 3. Dibujar a Lilie encima del mapa en el mundo
     if hasattr(lili, 'draw'):
-        lili.draw(screen, jefes_vivos)
+        lili.draw(camara.mundo, jefes_vivos)
 
-    # 4. Dibujar el HUD
+    # 4. Actualizar la cámara para que siga a Lilie (inmediato=False para suavizado)
+    camara.seguir(lili.hitbox)
+
+    # 5. Volcar lo que ve la cámara a la pantalla real
+    camara.volcar(screen)
+
+    # 6. Dibujar el HUD directamente sobre la pantalla (queda fijo)
     lili.draw_hud(screen)
 
     if video_pendiente is not None:
