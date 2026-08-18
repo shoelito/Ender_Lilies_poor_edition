@@ -49,7 +49,7 @@ CAMARA_ZONA_MUERTA_Y = 160 # Igual pero en vertical: sin esto la cámara sube y
 CAMARA_SUAVIZADO = 0.1   # Interpolación (0.1 es un seguimiento suave)
 
 # Mapas (Tiled)
-MAPAS_PATH = "Assets/Lilie/map/tileset_mapa/Mapas/"
+MAPAS_PATH = "Assets/Lilie/map/tileset_map_1/maps/"
 
 # Orden en el que se encadenan los niveles. Saliendo por la derecha se pasa al
 # siguiente de la lista y por la izquierda se vuelve al anterior; en las dos
@@ -60,13 +60,15 @@ MAPAS_PATH = "Assets/Lilie/map/tileset_mapa/Mapas/"
 # ningún .tmx lo usa, así que el segundo nivel se va a ver igual que el
 # tercero hasta que rehagas mapa_nivel_1.tmx en Tiled sobre ese tileset.
 ORDEN_NIVELES = [
-    MAPAS_PATH + "mapa_nivel_3.tmx",        # Nivel 3.jpeg
-    MAPAS_PATH + "mapa_nivel_1.tmx",        # deberia ser Nivel 1.jpeg
-    MAPAS_PATH + "mapa_nivel_2.tmx",        # Nivel 2.jpeg
-    MAPAS_PATH + "mapa_zona_2.tmx",         # zona 2.jpeg
-    MAPAS_PATH + "mapa_zona_1.tmx",         # Zona 1.jpeg
-    MAPAS_PATH + "mapa_zona_finalboss.tmx", # zona_1_final_boss.jpeg
-    MAPAS_PATH + "mapa_zona_3.tmx",         # zona 3_nivel2.jpeg
+    MAPAS_PATH + "zona_3.tmx",        # Nivel 3.jpeg
+    MAPAS_PATH + "zona_1.tmx",        # deberia ser Nivel 1.jpeg
+    MAPAS_PATH + "zona_2.tmx",        # Nivel 2.jpeg
+    MAPAS_PATH + "zona_2.1.tmx",         # zona 2.jpeg
+    MAPAS_PATH + "zona_1.tmx",         # Zona 1.jpeg
+    MAPAS_PATH + "zona_1.4.tmx", 
+    MAPAS_PATH + "zona_1.3.tmx",
+    MAPAS_PATH + "zona_1.2.tmx",
+    MAPAS_PATH + "zona_1.1.tmx",                                    
 ]
 MAPA_INICIAL = ORDEN_NIVELES[0]
 # Duración del fundido a negro con el que se tapa la carga del nivel nuevo.
