@@ -18,7 +18,7 @@ encima. Eso trae dos consecuencias que esta clase resuelve:
 
 Uso:
 
-    mapa = Mapa("Assets/.../mapa_zona_1.tmx")
+    mapa = Mapa("Assets/.../zona_1.tmx")
     camara = Camara(mapa.width, mapa.height)
     ...
     mapa.draw(camara.mundo, camara.vista)
@@ -27,6 +27,8 @@ Uso:
 `mapa.width`/`mapa.height` ya vienen escalados: son el tamaño del mundo en
 píxeles de pantalla, que es justo lo que espera `Camara`.
 """
+import os
+
 import pygame
 from pytmx.util_pygame import load_pygame
 
@@ -69,6 +71,12 @@ class Mapa:
         self.ancho_original = self.tmxdata.width * self.tmxdata.tilewidth
         self.alto_original = self.tmxdata.height * self.tmxdata.tileheight
 
+        if escala is None:
+            # Cada nivel puede traer la suya: los cuatro primeros son capturas
+            # del juego original y hay que agrandarlos, el resto ya viene a
+            # resolución de juego. Ver con.MAPA_ESCALAS.
+            escalas = getattr(con, "MAPA_ESCALAS", {}) or {}
+            escala = escalas.get(os.path.basename(filename))
         if escala is None:
             escala = getattr(con, "MAPA_ESCALA", None)
         if escala is None:
@@ -126,7 +134,7 @@ class Mapa:
 
         Si alguna capa se llama "colisiones" (o parecido) se usan sólo ésas y
         el resto queda libre para marcadores, spawns o decoración. Si ninguna
-        tiene ese nombre —como en `mapa_nivel_3.tmx`, donde la capa quedó con
+        tiene ese nombre —como en `zona_1.tmx`, donde la capa quedó con
         el nombre por defecto de Tiled— se usan todas, que es lo que el mapa
         quiso decir.
         """
@@ -205,7 +213,7 @@ class Mapa:
         """Descarta los rects que ya están enteros dentro de otro.
 
         Los mapas se dibujaron a mano y tienen bastante solapamiento (en
-        `mapa_zona_1` hay rectángulos apilados sobre la misma roca). Un rect
+        `zona_1.3` hay rectángulos apilados sobre la misma roca). Un rect
         contenido en otro no agrega colisión y sí agrega trabajo: la resolución
         de colisiones recorre la lista completa dos veces por frame.
         """
@@ -237,7 +245,7 @@ class Mapa:
           - que sean más anchas que Lilie, o no hay dónde pararse,
           - que tengan nivel dibujado encima.
         Lo último no es un capricho: estos mapas son un collage de capturas
-        sobre fondo blanco, y en `mapa_zona_1` los objetos de más a la
+        sobre fondo blanco, y en `zona_1.3` los objetos de más a la
         izquierda son paredes de borde plantadas en el vacío. Sin mirar el
         arte, Lilie aparecía parada en medio de una pantalla en blanco.
         """

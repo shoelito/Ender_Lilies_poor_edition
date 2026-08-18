@@ -7,7 +7,7 @@ Son dos pruebas distintas:
 1. El mecanismo. Se lleva a Lilie al filo de cada nivel y se comprueba que
    pasa al que corresponde de `con.ORDEN_NIVELES`, que entra por el borde
    contrario, que queda parada sobre suelo y que en las puntas de la cadena no
-   hay a dónde salir. Esto recorre los 7 niveles en los dos sentidos y es lo
+   hay a dónde salir. Esto recorre la cadena entera en los dos sentidos y es lo
    que decide si la prueba pasa o falla.
 
 2. El paseo. Un autopiloto que camina hacia un costado y salta cuando se traba,
@@ -170,7 +170,7 @@ def main():
     for p in problemas:
         print(f"  ERROR: {p}")
     print("\n" + ("FALLO" if problemas
-                  else "OK: se pasa entre los 7 niveles en los dos sentidos."))
+                  else "OK: se pasa entre todos los niveles en los dos sentidos."))
     return 1 if problemas else 0
 
 

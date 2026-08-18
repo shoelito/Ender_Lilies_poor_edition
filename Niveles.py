@@ -19,8 +19,8 @@ variables sueltas que quedarían viejas al cambiar de nivel.
         niveles.mapa.limitar(lili)      # punta de la cadena: no hay a dónde ir
 
 Los mapas se cargan de a uno. A escala 6 cada nivel ocupa ~100MB entre la
-imagen y el lienzo del mundo, así que tener los siete en memoria serían casi
-1.5GB: se suelta el anterior antes de armar el nuevo y se tapa el medio
+imagen y el lienzo del mundo, así que tener los doce en memoria serían varios
+GB: se suelta el anterior antes de armar el nuevo y se tapa el medio
 segundo de carga con un fundido a negro.
 """
 import gc
