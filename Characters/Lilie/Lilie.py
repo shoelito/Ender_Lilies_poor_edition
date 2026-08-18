@@ -305,18 +305,27 @@ class Lilie(Character):
             self.vel_y = 0
             toco_suelo = True
 
-        # Estar en el piso no es lo mismo que haber chocado con él este frame.
-        # La gravedad la hunde 0.5px por frame y el Rect de colisión trabaja en
-        # enteros, así que un frame de cada dos el solapamiento no llega a 1px,
-        # no se resuelve nada y `toco_suelo` quedaba en False: parada quieta,
-        # `on_ground` alternaba 400 veces en 10s y la animación saltaba a
-        # "jump" un tercio del tiempo. Se pregunta directamente si hay algo
-        # sólido debajo de los pies.
-        if not toco_suelo and self.vel_y >= 0:
-            toco_suelo = self._hay_suelo_debajo(logical_rect, colisiones)
-            if toco_suelo:
-                # Que la caída no siga acumulando velocidad estando apoyada.
+        # Apoyarse en el piso, de forma estable.
+        #
+        # Resolver el choque no alcanza. La gravedad suma 0.5px por frame y el
+        # Rect de colisión trabaja en enteros, así que estando quieta se
+        # repetía este ciclo: un frame se hunde medio píxel sin que el
+        # solapamiento llegue a 1px (no se resuelve nada, `toco_suelo` en
+        # False), al siguiente sí y se la empuja de vuelta. `y` alternaba entre
+        # 1368.0 y 1367.5 en 299 de cada 300 frames; al dibujar, ese medio
+        # píxel se trunca y el sprite temblaba 1px arriba y abajo a 60fps,
+        # que es lo que se veía como si saltara sin parar.
+        #
+        # En vez de eso se busca la superficie que tiene debajo de los pies y
+        # se la apoya exactamente encima. Así `y` queda quieta y entera
+        # mientras esté parada, y `on_ground` deja de depender de si este frame
+        # hubo choque o no.
+        if self.vel_y >= 0:
+            suelo = self._suelo_debajo(logical_rect, colisiones)
+            if suelo is not None:
+                self.y = suelo - self.height
                 self.vel_y = 0
+                toco_suelo = True
 
         if toco_suelo:
             self.jumpLimit = 2 if self.saved["double_jump"] else 1
@@ -331,16 +340,25 @@ class Lilie(Character):
         self._sync_hitbox()
 
     @staticmethod
-    def _hay_suelo_debajo(logical_rect, colisiones, alcance=con.SONDA_SUELO):
-        """True si hay algo sólido justo abajo de los pies.
+    def _suelo_debajo(logical_rect, colisiones, alcance=con.SONDA_SUELO):
+        """Altura de la superficie sobre la que está apoyada, o None si no hay.
 
-        `alcance` es la tolerancia en píxeles. Tiene que aguantar el hundimiento
-        de un frame de gravedad y las juntas entre plataformas vecinas: los
-        mapas están dibujados a mano y dos rectángulos pegados pueden quedar
-        con el borde de arriba desparejo por un par de píxeles."""
-        sonda = pygame.Rect(logical_rect.x, logical_rect.bottom,
-                            logical_rect.width, alcance)
-        return any(sonda.colliderect(rect) for rect in colisiones)
+        Mira una franja de `alcance` píxeles a cada lado de los pies. Esa
+        tolerancia cubre el hundimiento de un frame de gravedad y las juntas
+        desparejas entre plataformas vecinas: los mapas están dibujados a mano
+        y dos rectángulos pegados suelen tener el borde de arriba corrido un
+        par de píxeles.
+
+        Sólo cuentan los rectángulos cuyo *borde de arriba* cae dentro de esa
+        franja. Sin ese filtro, una pared alta al lado de la que está parada
+        también toca la sonda y su tope está metros más arriba: apoyarla ahí la
+        teletransportaría hasta la punta de la pared."""
+        sonda = pygame.Rect(logical_rect.x, logical_rect.bottom - alcance,
+                            logical_rect.width, alcance * 2)
+        pisos = [rect.top for rect in colisiones
+                 if sonda.colliderect(rect)
+                 and abs(rect.top - logical_rect.bottom) <= alcance]
+        return min(pisos) if pisos else None
 
     def draw(self, screen, enemies=()):
         frame, is_flip = Character._get_scaled_frame(self)
